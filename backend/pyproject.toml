@@ -44,7 +44,7 @@ known-first-party = ["app"]
 known-third-party = ["alembic"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S105", "S106"]
+"tests/**" = ["S105", "S106", "ASYNC240"]
 "scripts/**" = ["ASYNC240"]  # one-shot CLI; blocking file IO is fine
 
 [tool.mypy]

@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "request_id": "01a196ef-659a-7a9c-860d-07872aa834f1",
+  "transcript": "शर्मा जी ने 2 kg चीनी ली, 120 रुपये उधार।",
+  "model": "prisma-v3.0",
+  "detected_language_code": "hi-IN",
+  "processing_time": 0.41593003273010254,
+  "end_to_end_latency": 0.4174051284790039
+}

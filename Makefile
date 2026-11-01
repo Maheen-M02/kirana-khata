@@ -3,6 +3,10 @@ SHELL := bash
 .SHELLFLAGS := -eu -o pipefail -c
 .DEFAULT_GOAL := help
 
+# Windows consoles default to cp1252; Devanagari transcripts must print and log cleanly.
+export PYTHONUTF8 := 1
+export PYTHONIOENCODING := utf-8
+
 UV   ?= uv
 PNPM ?= pnpm
 BACKEND_PORT  ?= 8000

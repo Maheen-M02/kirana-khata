@@ -4,8 +4,8 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 
 | Phase | Status | Date |
 |---|---|---|
-| 0. Setup | ✅ done (repo created; push is waiting on the gh `workflow` scope) | 2026-11-01 |
-| 1. Gnani voice | 🟡 code and offline tests done; live acceptance waiting for approval to spend credits | 2026-11-01 |
+| 0. Setup | ✅ done: CI green on GitHub | 2026-11-01 |
+| 1. Gnani voice | ✅ done: live round trip passed, recorded fixtures replay | 2026-11-01 |
 | 2. NLU | ⏳ next | |
 | 3. Ledger | — | |
 | 4. Voice loop API | — | |
@@ -29,7 +29,7 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 - `pnpm build` passes. The Docker image boots, migrates, and serves `/api/health` and `/api/ready`.
 
 **Open issues**
-- Repo is https://github.com/Maheen-M02/kirana-khata (public). The push was rejected: the gh token lacks the `workflow` scope.
+- Repo: https://github.com/Maheen-M02/kirana-khata (public). CI run 41303322287 is green (secrets, backend, frontend, docker).
 - The Gnani key is now in `.env`. It had been pasted into `.env.example`; I moved it out before any push, and git history is clean. A CI secret scan now guards against this.
 - Evon hosting is undecided (running `NLU_MODE=rules` for now).
 - Run `make` from Git Bash on Windows: PowerShell may resolve `bash` to WSL.
@@ -48,10 +48,15 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 - ffmpeg prep: about 120 ms for a 2.8 s clip.
 - Offline CLI run against an unresolvable host: 3 attempts with backoff, mapped to `upstream`, friendly line shown, and the key never appears in output.
 
-**Not done (acceptance)**
-- "A real wav goes to a transcript, and text comes back as playable audio" needs a live run (about 6 credits). Waiting for approval.
-- No recorded fixtures yet. They come from that same live run (`--record`).
+**Live acceptance (6 approved credits, TTS → STT round trip, no phone recordings)**
+- `make test-live`: Timbre audio → ffmpeg → Prisma gave `शर्मा जी ने 200 रुपये जमा किए।` (pass; STT 518–587 ms).
+- Timbre SSE (v2.5 Poorvi): first audio in 368 ms; a playable 3.6 s mp3.
+- Prisma on that mp3: `शर्मा जी ने 2 kg चीनी ली, 120 रुपये उधार।` (637 ms), recorded as a fixture and replayed in tests.
+- A/B with timbre-v3.0 + Shivani: first audio in 308 ms. The voice choice is waiting on the user's ear.
+- pytest: 83 passed (including the recorded-fixture replays).
 
 **Open issues**
 - The credit guard counts a call before sending it, so calls that fail on the network are counted too (conservative).
 - The credit counter lives in a JSON file; it moves to the DB in Phase 3.
+- The `transliterate` vs `transcribe` comparison was deferred to Phase 2 (stayed within the 6-credit budget).
+- Windows consoles needed `PYTHONUTF8=1` to print Devanagari; the Makefile now exports it.

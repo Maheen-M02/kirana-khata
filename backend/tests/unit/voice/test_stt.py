@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
@@ -9,7 +10,7 @@ import respx
 from app.voice.errors import GnaniError
 from app.voice.gnani_http import GnaniTransport
 from app.voice.gnani_stt import GnaniSTT, build_form, parse_response
-from tests.unit.voice.conftest import fixture
+from tests.unit.voice.conftest import FIXTURES, fixture
 
 WAV = b"RIFF\x00\x00\x00\x00WAVEfake"
 
@@ -96,3 +97,30 @@ async def test_empty_audio_never_calls_api(
     with pytest.raises(GnaniError):
         await make_stt(transport).transcribe(b"")
     assert route.call_count == 0
+
+
+RECORDED = sorted(FIXTURES.glob("stt_*.recorded.json"))
+
+
+@pytest.mark.skipif(not RECORDED, reason="no recorded fixtures yet")
+@pytest.mark.parametrize("path", RECORDED, ids=lambda p: p.stem)
+async def test_recorded_live_responses_replay(
+    path: Path, transport: GnaniTransport, router: respx.MockRouter
+) -> None:
+    """Real Prisma v3 bodies captured by `make smoke-voice ... ARGS=--record`."""
+    body = json.loads(path.read_text(encoding="utf-8"))
+    router.post("/stt/v3").mock(return_value=httpx.Response(200, json=body))
+    r = await make_stt(transport).transcribe(WAV)
+    assert r.transcript == body["transcript"].strip()
+    assert r.request_id == body["request_id"]
+    assert r.model == "prisma-v3.0"
+
+
+def test_recorded_sharma_udhaar_keeps_amount_and_unit() -> None:
+    """What Prisma actually returns for 'ek sau bees rupaye udhaar' in transcribe mode: digits
+    and Devanagari words. Phase 2's rules parser must handle exactly this shape."""
+    path = FIXTURES / "stt_sharma_ji_ne_do_kilo_cheeni_li_ek_sau_be.transcribe.recorded.json"
+    t = json.loads(path.read_text(encoding="utf-8"))["transcript"]
+    assert "120" in t
+    assert "उधार" in t
+    assert "2 kg" in t

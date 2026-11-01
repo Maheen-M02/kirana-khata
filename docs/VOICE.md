@@ -26,9 +26,32 @@ make test-live                                       # Timbre -> ffmpeg -> Prism
 
 ## Latency budget (target ≤ 3.5 s p50, mic release to first audio)
 
+These are first live measurements from 2026-11-01: single runs from a home connection in India, not a p50. Proper p50/p95 numbers come from `/debug` in Phase 7.
+
 | Stage | Measured |
 |---|---|
-| ffmpeg prep | ~120 ms for a 2.8 s webm clip (local, Windows) |
-| Prisma STT | not measured yet: needs the live smoke run |
-| NLU | Phase 2 |
-| Timbre time to first chunk (SSE) | not measured yet: needs the live smoke run |
+| ffmpeg prep | 120–122 ms (2.8–3.6 s clips) |
+| Prisma STT v3 (round trip from client) | 518 / 587 / 637 ms; upstream `processing_time` 0.42 s |
+| NLU | Phase 2 (Evon has a 4 s timeout; rules is about 1 ms) |
+| Timbre time to first chunk over SSE | 368 ms (v2.5 Poorvi), 308 ms (v3.0 Shivani) |
+| **Subtotal without NLU or upload** | **about 1.0–1.1 s**: leaves about 2.4 s for upload and NLU |
+
+## What Prisma actually returns (recorded)
+
+For TTS audio of *"Sharma ji ne do kilo cheeni li, ek sau bees rupaye udhaar."*, `format=transcribe` with `hi-IN,en-IN` returned:
+
+```
+शर्मा जी ने 2 kg चीनी ली, 120 रुपये उधार।
+```
+
+- Numbers and units come back as **digits** ("120", "2 kg"), so the hard Hindi-number parsing is mostly needed for `verbatim`/`transliterate` output or fallback.
+- Hindi words come back in **Devanagari**, so the rules parser and customer resolver must handle Devanagari keywords (उधार, जमा) and transliterate names. Phase 2 will compare against `format=transliterate` (1 credit).
+
+## Voice A/B (Timbre)
+
+| Option | First chunk | Audio length | File |
+|---|---|---|---|
+| `timbre-v2.5` + `Poorvi` + `hi-en` (current default) | 368 ms | 3.6 s | `backend/var/smoke/ab_poorvi_v25.mp3` |
+| `timbre-v3.0` + `Shivani` + `hi-en` | 308 ms | 4.1 s | `backend/var/smoke/ab_shivani_v30.mp3` |
+
+Pick by ear; set `GNANI_TTS_MODEL` and `GNANI_TTS_VOICE`.
