@@ -46,4 +46,23 @@ Errors come back as `{"error": {"code": "...", "message": "<short Hinglish line>
 
 ## Voice (Phase 4)
 
-These come next: `POST /voice/turn` (multipart audio plus `Idempotency-Key`) and `POST /voice/{event_id}/confirm`.
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| POST | `/voice/turn` | multipart `audio` (webm/opus, m4a, wav… ≤ 2 MB) plus the `Idempotency-Key` header (8–64 chars) | `TurnOut` |
+| POST | `/voice/{event_id}/confirm` | JSON `{accept?: bool, customer_id?: int, amount_paise?: int}` **or** multipart `audio` ("haan", a name, or an amount) | `TurnOut` |
+| GET | `/voice/audio/{sha256}.mp3` | n/a | Cached Timbre audio (immutable) |
+
+```
+TurnOut = {event_id, status: pending|confirmed|rejected|failed,
+           stage: confirm|confirm_large|disambiguate|customer|amount|done|error,
+           transcript, intent, confirm_text, confirm_audio_url, needs_confirmation,
+           options: [{customer_id, name}], entry_id, customer_id, balance_paise,
+           latency_ms: {stt, nlu, tts, total}}
+```
+
+- **Play** `confirm_audio_url` and show `confirm_text` (the text is always present, even when TTS fails).
+- **`needs_confirmation`:** show ✓/✗, or send the next "haan" clip to `/confirm`. A bare "haan" sent to `/voice/turn` also confirms the latest open question.
+- **`stage = disambiguate`:** render `options` as buttons, then send `{customer_id}`.
+- **`stage = amount`:** the user says or types the amount, then send `{amount_paise}` or the audio.
+- **Same `Idempotency-Key` twice:** returns the same response. A second accept on an event replays the first result. The database allows at most one ledger row per voice event.
+- **Dev only (not in `prod`):** a multipart `transcript` field may replace `audio`, so the UI can be tested without spending credits.

@@ -8,8 +8,8 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 | 1. Gnani voice | ✅ done: live round trip passed, recorded fixtures replay | 2026-11-01 |
 | 2. NLU | ✅ done (rules gate met offline; Evon eval waiting on hosting) | 2026-11-01 |
 | 3. Ledger | ✅ done (SQLite + Postgres) | 2026-11-01 |
-| 4. Voice loop API | ⏳ next | |
-| 5. Frontend | — | |
+| 4. Voice loop API | ✅ done (fakes; live end-to-end run pending approval) | 2026-11-01 |
+| 5. Frontend | ⏳ next | |
 | 6. Hardening | — | |
 | 7. Deploy | — | |
 | 8. Demo kit | — | |
@@ -104,3 +104,23 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 - Auth is not in place yet (Phase 6): routes act on the first shop. Don't deploy before Phase 6.
 - A sale cancelled on a later day reduces that day's total. Revisit when building the end-of-day summary.
 - The credit-guard counter still lives in a JSON file (should move to the DB; low priority).
+
+## Phase 4: Voice loop API (2026-11-01)
+
+**Done**
+- `/voice/turn`, `/voice/{id}/confirm` (JSON taps or an audio answer) and cached Timbre audio serving. The orchestrator is in `app/voice/turn.py`.
+- Conversation stages: confirm, confirm_large (> ₹50,000), disambiguate, customer, amount. A bare "haan" confirms the open question. Questions expire after 10 minutes.
+- Idempotency: the `Idempotency-Key` replays the stored response, and the new unique index means **one voice event creates at most one ledger row**.
+- Migration 2 adds the voice-turn state. It uses an index instead of an ALTER so the SQLite rebuild can't drop the append-only triggers. CI now also runs `alembic check` (models and migrations match).
+- New customers are created on "haan"; spoken name variants are learned as aliases.
+
+**Acceptance:** `test_audio_to_committed_entry_to_spoken_balance` takes a real opus/webm recording → ffmpeg → FakeSTT → rules NLU → FakeTTS → "haan" as audio → ledger entry (with item lines) → "Likh diya. Ramesh Sharma ka total baaki ek sau bees rupaye." It passes on SQLite and Postgres.
+
+**Metrics:** pytest 474 passed with Postgres (20 voice-loop tests × 2 engines).
+
+**Bug caught:** the "Kitne rupaye?" prompt lowercased names ("Ramesh sharma") because of `str.capitalize()`.
+
+**Not done**
+- A live end-to-end run against real Gnani (about 2–4 credits) to measure real latency through the API. Waiting for approval.
+- TTS streams to the browser as a cached mp3 URL (REST), not SSE. That's fine for cached phrases; I'll revisit if the p50 is over budget.
+- The DB calls are sync inside async routes. That's fine for one shop; noted for scale.

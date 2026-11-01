@@ -123,6 +123,11 @@ class VoiceEvent(Base):
     latency_stt_ms: Mapped[int | None] = mapped_column(Integer)
     latency_nlu_ms: Mapped[int | None] = mapped_column(Integer)
     latency_tts_ms: Mapped[int | None] = mapped_column(Integer)
+    latency_total_ms: Mapped[int | None] = mapped_column(Integer)
+    # Conversation state while waiting for "haan" / a name / an amount (Phase 4).
+    pending_json: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    # Last response sent, replayed for idempotent retries and double taps.
+    response_json: Mapped[dict[str, Any] | None] = mapped_column(JSON)
     error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=utcnow)
 
@@ -142,6 +147,8 @@ class LedgerEntry(Base):
             name="ck_ledger_entry_customer_required",
         ),
         UniqueConstraint("reverses_entry_id", name="uq_ledger_entry_one_reversal"),
+        # One voice turn can create at most one ledger row: a double "haan" can't double-book.
+        Index("uq_ledger_entry_voice_event", "voice_event_id", unique=True),
         Index("ix_ledger_entry_shop_created", "shop_id", "created_at"),
         Index("ix_ledger_entry_customer", "customer_id"),
     )

@@ -1,4 +1,4 @@
-# Voice layer (Phase 1)
+# Voice layer (Phases 1 and 4)
 
 `backend/app/voice/`. The rest of the app talks only to the `SpeechToText` and `TextToSpeech` protocols. Tests use `FakeSTT` and `FakeTTS`.
 
@@ -57,3 +57,26 @@ For TTS audio of *"Sharma ji ne do kilo cheeni li, ek sau bees rupaye udhaar."*,
 The owner picked Shivani by ear on 2026-11-01. Change it with `GNANI_TTS_MODEL` / `GNANI_TTS_VOICE`.
 
 `transliterate` A/B (1 credit, same clip): `Sharma ji ne do kilo chini li, ek sau bees rupaye udhar.` (592 ms, no `detected_language_code`). `transcribe` stays the default (see ARCHITECTURE decisions).
+
+## The voice loop (Phase 4): `app/voice/turn.py`
+
+```
+/voice/turn ──> prepare_audio (reject <0.4 s speech / >28 s, before any credit is spent)
+            ──> Prisma STT ──> NLU (rules | hybrid) ──> resolve customer ──> state machine
+            ──> Timbre (cached mp3, single-flight) ──> voice_event saved (transcript, NLU JSON,
+                per-stage latency, status, response for replay)
+/voice/{id}/confirm ──> "haan"/✓ in stage confirm ──> ledger (one row per event, DB-enforced)
+                    ──> "Likh diya. Sharma ji ka total baaki …" with the new balance
+```
+
+| Stage | Asked | Answer |
+|---|---|---|
+| `confirm` | "Ramesh Sharma, ek sau bees rupaye udhaar. Sahi hai?" | haan / nahi / ✓ / ✗ |
+| `confirm_large` | "… Bada amount hai, pakka?" (> ₹50,000) | haan, then a second haan |
+| `disambiguate` | "Kaun se Sharma ji: Ramesh ya Suresh?" | name or tap |
+| `customer` | "Kis customer ka hai? Naam boliye." | name (an unknown name offers a new customer) |
+| `amount` | "Ramesh Sharma ka kitne rupaye?" | "dedh sau" / typed amount |
+
+- **Failures** (audio too short, empty transcript, Gnani 429/5xx, TTS down) always come back as a friendly Hinglish line with status `failed`, and nothing is written.
+- **Expiry:** questions expire after 10 minutes.
+- **Alias learning:** when the shopkeeper confirms "Sharma uncle" for Ramesh Sharma, the variant is saved as an alias.

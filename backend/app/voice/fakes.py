@@ -10,11 +10,19 @@ from app.voice.gnani_tts import MP3, TtsResult, validate_text
 
 
 class FakeSTT:
-    """Transcripts keyed by fixture filename (e.g. "sharma_udhaar.wav")."""
+    """Transcripts keyed by fixture filename (e.g. "sharma_udhaar.wav"), or a `script` queue
+    consumed in order (for multi-turn conversations: entry, then "haan")."""
 
-    def __init__(self, transcripts: Mapping[str, str], *, default: str | None = None,
-                 error: GnaniError | None = None) -> None:  # fmt: skip
-        self.transcripts = dict(transcripts)
+    def __init__(
+        self,
+        transcripts: Mapping[str, str] | None = None,
+        *,
+        default: str | None = None,
+        error: GnaniError | None = None,
+        script: Sequence[str] = (),
+    ) -> None:
+        self.transcripts = dict(transcripts or {})
+        self.script = list(script)
         self.default = default
         self.error = error
         self.calls: list[str] = []
@@ -30,7 +38,9 @@ class FakeSTT:
         self.calls.append(filename)
         if self.error:
             raise self.error
-        if filename in self.transcripts:
+        if self.script:
+            text = self.script.pop(0)
+        elif filename in self.transcripts:
             text = self.transcripts[filename]
         elif self.default is not None:
             text = self.default
