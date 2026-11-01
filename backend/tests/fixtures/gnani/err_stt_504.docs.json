@@ -1,0 +1,1 @@
+{"error": "Gateway Timeout", "code": "UPSTREAM_TIMEOUT", "message": "The speech-to-text model failed to respond within the allocated 5000ms limit."}

@@ -13,6 +13,7 @@ dependencies = [
     "python-multipart>=0.0.33",
     "sqlalchemy>=2",
     "structlog>=26.1.0",
+    "tzdata>=2026.6",
     "uvicorn[standard]>=0.54.0",
 ]
 
@@ -44,11 +45,12 @@ known-third-party = ["alembic"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S105", "S106"]
+"scripts/**" = ["ASYNC240"]  # one-shot CLI; blocking file IO is fine
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["app"]
+packages = ["app", "scripts"]
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]

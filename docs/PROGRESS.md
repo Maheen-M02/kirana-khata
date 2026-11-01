@@ -4,9 +4,9 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 
 | Phase | Status | Date |
 |---|---|---|
-| 0. Setup | ✅ done locally (CI isn't confirmed: no GitHub remote yet) | 2026-11-01 |
-| 1. Gnani voice | ⏳ next | |
-| 2. NLU | — | |
+| 0. Setup | ✅ done (repo created; push is waiting on the gh `workflow` scope) | 2026-11-01 |
+| 1. Gnani voice | 🟡 code and offline tests done; live acceptance waiting for approval to spend credits | 2026-11-01 |
+| 2. NLU | ⏳ next | |
 | 3. Ledger | — | |
 | 4. Voice loop API | — | |
 | 5. Frontend | — | |
@@ -29,8 +29,29 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 - `pnpm build` passes. The Docker image boots, migrates, and serves `/api/health` and `/api/ready`.
 
 **Open issues**
-- No GitHub remote, so CI hasn't run yet. Waiting on approval to create the repo.
-- No `GNANI_API_KEY` (no `.env`). Phase 1's live acceptance and the recorded fixtures depend on it.
+- Repo is https://github.com/Maheen-M02/kirana-khata (public). The push was rejected: the gh token lacks the `workflow` scope.
+- The Gnani key is now in `.env`. It had been pasted into `.env.example`; I moved it out before any push, and git history is clean. A CI secret scan now guards against this.
 - Evon hosting is undecided (running `NLU_MODE=rules` for now).
 - Run `make` from Git Bash on Windows: PowerShell may resolve `bash` to WSL.
 - The winget PATH entries for uv and make only appear in shells opened after the install.
+
+## Phase 1: Gnani voice (2026-11-01)
+
+**Done**
+- `app/voice/`: audio prep (ffmpeg), the `GnaniTransport` (auth, retries, error mapping, logging), the `SingleFlight` gate shared by STT and TTS, the `FileCreditGuard` (daily, IST), `GnaniSTT` (REST v3), `GnaniTTS` (REST and SSE, sha256 disk cache), `FakeSTT`/`FakeTTS`, and a factory. See [VOICE.md](VOICE.md).
+- `scripts/smoke_voice.py`, plus `make smoke-voice`, `make tts-say` and `make test-live` (all opt-in; they spend credits).
+- Fixtures in `tests/fixtures/gnani/` taken from the documented response and error bodies. Recorded ones get added with `--record`.
+- Found and fixed a truncation bug in the skill's ffmpeg command (DOC_DIFFS #16): a clip with a mid-sentence pause was cut from 2.8 s to 0.52 s.
+
+**Metrics**
+- pytest: 81 passed (67 new voice tests; the ffmpeg tests use real encodes of webm/opus and m4a/aac). The `live` test is deselected by default.
+- ffmpeg prep: about 120 ms for a 2.8 s clip.
+- Offline CLI run against an unresolvable host: 3 attempts with backoff, mapped to `upstream`, friendly line shown, and the key never appears in output.
+
+**Not done (acceptance)**
+- "A real wav goes to a transcript, and text comes back as playable audio" needs a live run (about 6 credits). Waiting for approval.
+- No recorded fixtures yet. They come from that same live run (`--record`).
+
+**Open issues**
+- The credit guard counts a call before sending it, so calls that fail on the network are counted too (conservative).
+- The credit counter lives in a JSON file; it moves to the DB in Phase 3.

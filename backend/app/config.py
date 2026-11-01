@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field, SecretStr, field_validator
@@ -33,6 +34,10 @@ class Settings(BaseSettings):
     gnani_tts_speed: float = Field(default=0.95, ge=0.85, le=1.15)
     gnani_max_concurrency: int = Field(default=1, ge=1)
     gnani_credit_guard: int = Field(default=200, ge=0)
+    gnani_stt_timeout_s: float = 10.0
+    gnani_tts_timeout_s: float = 15.0
+    # Send shop customer names as Prisma v3 `keyterms` (DOC_DIFFS #5). Off until measured.
+    gnani_stt_keyterms: bool = False
 
     # Evon
     evon_base_url: str = "http://localhost:8080/v1"
@@ -46,6 +51,8 @@ class Settings(BaseSettings):
     jwt_secret: SecretStr = SecretStr("change-me")
     frontend_origin: str = "http://localhost:3000"
     tz: str = "Asia/Kolkata"
+    # Runtime data: TTS cache, credit counter, retained audio (gitignored).
+    var_dir: Path = Path("var")
 
     @field_validator("database_url")
     @classmethod

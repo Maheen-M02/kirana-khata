@@ -1,0 +1,1 @@
+{"detail": {"error_code": "RATE_LIMITED", "message": "Only 1 active request is allowed at a time. Wait for your current request to finish before sending another.", "status_code": 429}}

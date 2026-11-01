@@ -1,0 +1,1 @@
+{"success": true, "request_id": "r-trunc", "transcript": "sharma ji ne do kilo", "model": "prisma-v3.0", "detected_language_code": "hi-IN", "truncated": true, "processing_time": 1.2, "end_to_end_latency": 1.5}

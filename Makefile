@@ -9,7 +9,7 @@ BACKEND_PORT  ?= 8000
 FRONTEND_PORT ?= 3000
 
 .PHONY: help install dev dev-backend dev-frontend test test-backend test-frontend \
-        lint lint-backend lint-frontend fmt migrate smoke-voice docker-up docker-down
+        lint lint-backend lint-frontend fmt migrate smoke-voice tts-say test-live docker-up docker-down
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-16s %s\n",$$1,$$2}'
@@ -53,10 +53,16 @@ fmt: ## Auto-format backend
 migrate: ## Apply DB migrations
 	cd backend && $(UV) run alembic upgrade head
 
-smoke-voice: ## Live STT -> NLU -> TTS round trip (SPENDS CREDITS). Usage: make smoke-voice FILE=sample.wav
-	@test -n "$(FILE)" || { echo "Usage: make smoke-voice FILE=path/to/clip.wav"; exit 2; }
-	@test -f backend/scripts/smoke_voice.py || { echo "smoke-voice lands in Phase 1"; exit 2; }
-	cd backend && $(UV) run python -m scripts.smoke_voice "$(abspath $(FILE))"
+smoke-voice: ## Live STT -> TTS round trip (SPENDS CREDITS). make smoke-voice FILE=clip.webm [ARGS="--record"]
+	@test -n "$(FILE)" || { echo "Usage: make smoke-voice FILE=path/to/clip [ARGS=...]"; exit 2; }
+	cd backend && $(UV) run python -m scripts.smoke_voice "$(abspath $(FILE))" $(ARGS)
+
+tts-say: ## Live TTS only (SPENDS 1 CREDIT unless cached). make tts-say TEXT="..." [ARGS="--voice X"]
+	@test -n "$(TEXT)" || { echo 'Usage: make tts-say TEXT="Entry ho gayi."'; exit 2; }
+	cd backend && $(UV) run python -m scripts.smoke_voice --say "$(TEXT)" $(ARGS)
+
+test-live: ## Opt-in real Gnani tests (SPENDS CREDITS)
+	cd backend && $(UV) run pytest -m live -s
 
 docker-up: ## Backend + Postgres via docker compose
 	docker compose -f infra/docker-compose.yml up --build

@@ -9,9 +9,9 @@
 
 | Gnani model | Role in the loop | Where in code |
 |---|---|---|
-| **Prisma v3.0** (STT) | Hinglish, Hindi or Marathi speech → transcript | `backend/app/voice/gnani_stt.py` (Phase 1) |
+| **Prisma v3.0** (STT) | Hinglish, Hindi or Marathi speech → transcript | `backend/app/voice/gnani_stt.py` |
 | **Evon v3.3 30B-A3B** (LLM) | Transcript → strict JSON intent, cross-checked by a rules parser | `backend/app/nlu/` (Phase 2) |
-| **Timbre v2.5** (TTS) | Spoken confirmation and balance ("Sahi hai?") | `backend/app/voice/gnani_tts.py` (Phase 1) |
+| **Timbre v2.5** (TTS) | Spoken confirmation and balance ("Sahi hai?"), streamed over SSE | `backend/app/voice/gnani_tts.py` |
 
 ## Architecture
 
@@ -28,7 +28,7 @@ flowchart LR
   A -- haan / ✓ --> I[(Append-only ledger<br/>paise, reversals)]
 ```
 
-More detail is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+More detail is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/VOICE.md](docs/VOICE.md).
 
 ## Design decisions (summary)
 
@@ -51,6 +51,7 @@ make install
 make dev                    # backend http://localhost:8000, frontend http://localhost:3000
 make lint test              # ruff, mypy --strict, eslint, tsc, pytest, vitest
 make docker-up              # backend + Postgres in Docker (prod parity)
+make smoke-voice FILE=clip.webm   # live Gnani STT -> TTS round trip (spends ~2 credits)
 ```
 
 | Endpoint | Purpose |
