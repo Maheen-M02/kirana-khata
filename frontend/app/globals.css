@@ -2,89 +2,99 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
+/* Tokens are bare HSL triplets: tailwind.config.ts wraps them as hsl(var(--x) / alpha). */
+@layer base {
+  :root {
+    color-scheme: light;
+
+    --paper: 60 20% 97.5%;          /* #FAFAF7 ruled-register paper */
+    --ink: 229 53% 23%;             /* #1B2559 blue ballpoint */
+    --ink-soft: 229 18% 43%;        /* #5A6283 faded ink for secondary text */
+    --marigold: 40 100% 48%;        /* #F5A400 genda: the one action colour */
+    --marigold-deep: 34 100% 40%;   /* #CC7A00 pressed / focus edge */
+    --marigold-wash: 43 100% 92%;   /* #FFF1D6 */
+    --udhaar: 357 67% 45%;          /* #C0262D money owed (red ink) */
+    --udhaar-wash: 357 75% 96%;
+    --jama: 162 72% 27%;            /* #13795B money received */
+    --jama-wash: 155 50% 94%;
+    --rule: 222 30% 89%;            /* #DCE1EC faint blue ledger lines */
+    --margin: 357 60% 79%;          /* #E8A9AC red margin rule */
+
+    --background: var(--paper);
+    --foreground: var(--ink);
+    --card: 0 0% 100%;
+    --card-foreground: var(--ink);
+    --primary: var(--ink);
+    --primary-foreground: 0 0% 100%;
+    --secondary: 225 33% 95%;
+    --secondary-foreground: var(--ink);
+    --muted: 225 25% 94%;
+    --muted-foreground: var(--ink-soft);
+    --accent: var(--marigold-wash);
+    --accent-foreground: var(--ink);
+    --destructive: var(--udhaar);
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--rule);
+    --input: 222 22% 78%;
+    --ring: var(--marigold-deep);
+    --radius: 1.25rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    font-variation-settings: "wdth" 100;
+  }
+  :focus-visible {
+    outline: 3px solid hsl(var(--marigold-deep));
+    outline-offset: 3px;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
-}
-@layer base {
-  :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.141 0.005 285.823);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.141 0.005 285.823);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.141 0.005 285.823);
-    --primary: oklch(0.21 0.006 285.885);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.967 0.001 286.375);
-    --secondary-foreground: oklch(0.21 0.006 285.885);
-    --muted: oklch(0.967 0.001 286.375);
-    --muted-foreground: oklch(0.552 0.016 285.938);
-    --accent: oklch(0.967 0.001 286.375);
-    --accent-foreground: oklch(0.21 0.006 285.885);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.92 0.004 286.32);
-    --input: oklch(0.92 0.004 286.32);
-    --ring: oklch(0.705 0.015 286.067);
-    --chart-1: oklch(0.871 0.006 286.286);
-    --chart-2: oklch(0.552 0.016 285.938);
-    --chart-3: oklch(0.442 0.017 285.786);
-    --chart-4: oklch(0.37 0.013 285.805);
-    --chart-5: oklch(0.274 0.006 286.033);
-    --radius: 0.5rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.141 0.005 285.823);
-    --sidebar-primary: oklch(0.21 0.006 285.885);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.967 0.001 286.375);
-    --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-    --sidebar-border: oklch(0.92 0.004 286.32);
-    --sidebar-ring: oklch(0.705 0.015 286.067);
+  /* Anek's width axis: condensed heavy numerals for money, wide for the wordmark. */
+  .w-condensed {
+    font-variation-settings: "wdth" 78;
   }
-  .dark {
-    --background: oklch(0.141 0.005 285.823);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.21 0.006 285.885);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.21 0.006 285.885);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.92 0.004 286.32);
-    --primary-foreground: oklch(0.21 0.006 285.885);
-    --secondary: oklch(0.274 0.006 286.033);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.274 0.006 286.033);
-    --muted-foreground: oklch(0.705 0.015 286.067);
-    --accent: oklch(0.274 0.006 286.033);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.552 0.016 285.938);
-    --chart-1: oklch(0.871 0.006 286.286);
-    --chart-2: oklch(0.552 0.016 285.938);
-    --chart-3: oklch(0.442 0.017 285.786);
-    --chart-4: oklch(0.37 0.013 285.805);
-    --chart-5: oklch(0.274 0.006 286.033);
-    --sidebar: oklch(0.21 0.006 285.885);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.274 0.006 286.033);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.552 0.016 285.938);
+  .w-wide {
+    font-variation-settings: "wdth" 118;
+  }
+  .num {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  /* A khata page: faint blue rules every row, red double margin before the amount column. */
+  .ledger-margin {
+    background-image: linear-gradient(
+      to right,
+      transparent calc(100% - 7.5rem),
+      hsl(var(--margin)) calc(100% - 7.5rem),
+      hsl(var(--margin)) calc(100% - 7.5rem + 1px),
+      transparent calc(100% - 7.5rem + 1px),
+      transparent calc(100% - 7.5rem + 4px),
+      hsl(var(--margin)) calc(100% - 7.5rem + 4px),
+      hsl(var(--margin)) calc(100% - 7.5rem + 5px),
+      transparent calc(100% - 7.5rem + 5px)
+    );
+  }
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
   }
 }
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

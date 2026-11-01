@@ -14,43 +14,62 @@ export default async function CustomersPage() {
   const customers = (await getJson<Customer[]>("/customers")) ?? [];
   const owing = [...customers].sort((a, b) => b.balance_paise - a.balance_paise);
   const total = customers.reduce((s, c) => s + Math.max(c.balance_paise, 0), 0);
+  const max = Math.max(1, ...customers.map((c) => c.balance_paise));
+  const withDues = customers.filter((c) => c.balance_paise > 0).length;
 
   return (
     <>
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 pb-28 pt-6">
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col px-4 pb-32 pt-5">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Khate</h1>
+          <h1 className="w-wide text-3xl font-bold tracking-tight">Khate</h1>
           <LogoutButton />
         </div>
-        <p className="text-base text-muted-foreground">
-          {customers.length} customer · kul baaki{" "}
-          <span className="font-bold text-foreground tabular-nums">{formatInr(total)}</span>
-        </p>
+
+        <section aria-label="Kul baaki" className="mt-4 rounded-[1.5rem] bg-ink px-6 py-5 text-white">
+          <p className="text-lg text-white/75">Kul baaki, sab customer milaake</p>
+          <p className="num w-condensed mt-1 text-[3.25rem] font-bold leading-none">{formatInr(total)}</p>
+          <p className="mt-3 text-base text-white/75">
+            {withDues} logon se lena hai, kul {customers.length} khate
+          </p>
+        </section>
+
         {owing.length === 0 ? (
-          <p className="py-10 text-center text-muted-foreground">
-            Abhi koi customer nahi. Mic dabaake pehli entry boliye.
+          <p className="mt-6 rounded-[1.25rem] border-2 border-dashed border-rule px-6 py-10 text-center text-lg text-ink-soft">
+            Abhi koi khata nahi. Mic dabaake boliye, jaise “Sharma ji ne sau rupaye udhaar liye”.
           </p>
         ) : (
-          <ul className="divide-y rounded-2xl border">
-            {owing.map((c) => (
-              <li key={c.id}>
-                <Link href={`/customers/${c.id}`} className="flex min-h-16 items-center justify-between gap-3 px-4 py-3">
-                  <span className="min-w-0">
-                    <span className="block truncate text-lg font-semibold">{c.display_name}</span>
-                    {c.aliases.length > 0 && (
-                      <span className="block truncate text-sm text-muted-foreground">{c.aliases.join(", ")}</span>
-                    )}
-                  </span>
-                  <span className="flex shrink-0 items-center gap-1">
-                    <span className={cn("text-lg font-bold tabular-nums",
-                      c.balance_paise > 0 ? "text-red-700" : c.balance_paise < 0 ? "text-green-700" : "text-muted-foreground")}>
-                      {c.balance_display}
+          <ul className="ledger-margin mt-6 overflow-hidden rounded-[1.25rem] bg-white shadow-[0_0_0_1px_hsl(var(--rule))]">
+            {owing.map((c) => {
+              const owes = c.balance_paise > 0;
+              return (
+                <li key={c.id} className="border-b border-rule last:border-b-0">
+                  <Link href={`/customers/${c.id}`} className="flex min-h-[4.75rem] items-stretch active:bg-paper">
+                    <span className="min-w-0 flex-1 py-3 pl-5 pr-3">
+                      <span className="block truncate text-xl font-semibold leading-tight">{c.display_name}</span>
+                      {c.aliases.length > 0 && (
+                        <span className="mt-0.5 block truncate text-base text-ink-soft">{c.aliases.join(", ")}</span>
+                      )}
+                      {owes && (
+                        <span aria-hidden className="mt-2 block h-1 rounded-full bg-udhaar-wash">
+                          <span className="block h-full rounded-full bg-udhaar/70" style={{ width: `${Math.max(6, (c.balance_paise / max) * 100)}%` }} />
+                        </span>
+                      )}
                     </span>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden />
-                  </span>
-                </Link>
-              </li>
-            ))}
+                    <span className="flex w-[7.5rem] shrink-0 items-center justify-end gap-1 pr-3">
+                      <span
+                        className={cn(
+                          "num w-condensed text-[1.6rem] font-bold",
+                          owes ? "text-udhaar" : c.balance_paise < 0 ? "text-jama" : "text-ink-soft",
+                        )}
+                      >
+                        {c.balance_display.replace("-", "")}
+                      </span>
+                      <ChevronRight className="h-5 w-5 shrink-0 text-ink-soft/60" aria-hidden />
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
       </main>

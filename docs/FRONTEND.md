@@ -1,4 +1,4 @@
-# Frontend (Phase 5)
+# Frontend (Phase 5, redesigned after Phase 6)
 
 The frontend is a Next.js 14 (App Router) PWA with Tailwind and shadcn. **Everything is a server component except the voice console** (`components/voice-console.tsx`) and the service-worker registration.
 
@@ -7,6 +7,25 @@ The frontend is a Next.js 14 (App Router) PWA with Tailwind and shadcn. **Everyt
 | Bolo (home) | `/` | The big hold-to-talk mic, the confirm card, today's sales and entries |
 | Khate | `/customers` | Every customer with their balance, biggest dues first, and the total outstanding |
 | Customer | `/customers/[id]` | The balance (baaki / advance / barabar) and full history; cancelled entries are struck through |
+
+## Visual design
+
+The look is a shopkeeper's khata: blue ballpoint on ruled paper, with one marigold action.
+
+| Token | Hex | Used for |
+|---|---|---|
+| `ink` | #1B2559 | Text, headers, totals panels |
+| `marigold` | #F5A400 | The mic button and the login button only |
+| `paper` | #FAFAF7 | Background |
+| `udhaar` | #C0262D | Money owed (red ink) |
+| `jama` | #13795B | Money received, the Haan button |
+| `rule` / `margin` | #DCE1EC / #E8A9AC | Ledger lines and the red double margin before the amount column |
+
+- **Type:** Anek Devanagari, one variable family for both Latin and Devanagari names. Its width axis sets money figures condensed and heavy (`.w-condensed`) and the wordmark wide (`.w-wide`).
+- **Tokens:** defined in `app/globals.css` as bare HSL triplets and wrapped in `tailwind.config.ts` as `hsl(var(--x) / <alpha-value>)`. Before the redesign the CSS held `oklch()` values that the config wrapped in `hsl()`; browsers rejected those, so every themed colour silently fell back to the default.
+- **Lists:** entry and customer lists are drawn as a khata page (`.ledger-margin`), with amounts in a fixed 7.5rem column right of the red margin.
+- **Mic:** marigold at rest, ink with a marigold ring while listening. The ring scales with the live input level (Web Audio `AnalyserNode`), so the shopkeeper can see it hears them in a noisy shop. Reduced motion is respected.
+- **Login:** an ink brand panel with a sample exchange (what you say, what the khata answers), a +91 phone field, and 4 PIN boxes over one real input. It submits on the fourth digit and clears and refocuses the PIN after an error.
 
 ## Voice console
 
@@ -37,6 +56,8 @@ Security headers are set too: `Permissions-Policy: microphone=(self)`, `nosniff`
 |---|---|---|---|
 | `/` | 100 | 100 | 100 |
 | `/customers` | 100 | 100 | 100 |
+
+After the redesign (dev server, Lighthouse 12.8.2 mobile, logged in): Accessibility **100** on `/login`, `/`, `/customers` and `/customers/1`; Best practices 100 on `/login`. Performance hasn't been re-measured on a production build yet.
 
 **Lighthouse 12 removed the PWA category**, so the spec's "PWA ≥ 90" can't be scored. Installability was checked directly: manifest fields, icon sizes and purposes, service worker headers and scope, offline page. **Android Chrome over HTTPS** gets tested after the Phase 7 deploy.
 

@@ -1,41 +1,48 @@
+import { AppHeader } from "@/components/app-header";
 import { BottomNav } from "@/components/bottom-nav";
 import { EntryList } from "@/components/entry-list";
 import { VoiceConsole } from "@/components/voice-console";
 import { getHealth, getJson, type Entry, type Sales } from "@/lib/api";
+import { formatInr } from "@/lib/voice-machine";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [health, sales, entries] = await Promise.all([
+  const [health, me, sales, entries] = await Promise.all([
     getHealth(),
+    getJson<{ name: string }>("/auth/me"),
     getJson<Sales>("/reports/today"),
     getJson<Entry[]>("/ledger/entries?day=today&limit=20"),
   ]);
 
   return (
     <>
-      <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-4 pb-28 pt-6">
-        <header className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Kirana Khata</h1>
-          {health.status === "offline" && (
-            <span role="alert" className="rounded-full bg-destructive px-3 py-1 text-sm font-semibold text-destructive-foreground">
-              Server band hai
-            </span>
-          )}
-        </header>
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col px-4 pb-32 pt-5">
+        <AppHeader shopName={me?.name} offline={health.status === "offline"} />
 
-        <VoiceConsole />
+        <div className="mt-4 flex flex-col">
+          <VoiceConsole />
+        </div>
 
-        <section aria-labelledby="today" className="flex flex-col gap-3">
-          <div className="flex items-baseline justify-between">
-            <h2 id="today" className="text-lg font-bold">Aaj</h2>
-            {sales && (
-              <p className="text-base">
-                Bikri <span className="font-bold tabular-nums">{sales.total_display}</span>
-                <span className="text-muted-foreground"> · {sales.entries} entry</span>
-              </p>
-            )}
+        <section aria-labelledby="today" className="mt-10 flex flex-col gap-4">
+          <div className="flex items-end justify-between gap-4 px-1">
+            <h2 id="today" className="text-2xl font-bold">Aaj ka khata</h2>
+            {sales && <p className="text-base text-ink-soft">{sales.entries} entry</p>}
           </div>
+          {sales && (
+            <dl className="grid grid-cols-2 gap-3">
+              <div className="rounded-[1.25rem] bg-ink px-5 py-4 text-white">
+                <dt className="text-base text-white/75">Bikri</dt>
+                <dd className="num w-condensed text-[2.25rem] font-bold leading-none">{sales.total_display}</dd>
+              </div>
+              <div className="rounded-[1.25rem] bg-jama-wash px-5 py-4">
+                <dt className="text-base text-jama">Jama aaya</dt>
+                <dd className="num w-condensed text-[2.25rem] font-bold leading-none text-jama">
+                  {formatInr(sales.payments_paise)}
+                </dd>
+              </div>
+            </dl>
+          )}
           <EntryList entries={entries ?? []} />
         </section>
       </main>

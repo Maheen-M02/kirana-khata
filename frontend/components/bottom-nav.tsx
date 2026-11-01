@@ -1,19 +1,34 @@
-import { Mic, Users } from "lucide-react";
+import { BookOpen, Mic } from "lucide-react";
 import Link from "next/link";
 
+import { cn } from "@/lib/utils";
+
 export function BottomNav({ active }: { active: "home" | "customers" }) {
-  const item = "flex h-16 flex-1 flex-col items-center justify-center gap-1 text-sm font-semibold";
+  const tabs = [
+    { key: "home", href: "/", label: "Bolo", Icon: Mic },
+    { key: "customers", href: "/customers", label: "Khate", Icon: BookOpen },
+  ] as const;
   return (
-    <nav aria-label="Main" className="fixed inset-x-0 bottom-0 z-10 border-t bg-background/95 backdrop-blur">
+    <nav aria-label="Main" className="pb-safe fixed inset-x-0 bottom-0 z-20 border-t border-rule bg-paper/95 backdrop-blur">
       <div className="mx-auto flex max-w-md">
-        <Link href="/" aria-current={active === "home" ? "page" : undefined}
-          className={`${item} ${active === "home" ? "text-primary" : "text-muted-foreground"}`}>
-          <Mic className="h-6 w-6" aria-hidden /> Bolo
-        </Link>
-        <Link href="/customers" aria-current={active === "customers" ? "page" : undefined}
-          className={`${item} ${active === "customers" ? "text-primary" : "text-muted-foreground"}`}>
-          <Users className="h-6 w-6" aria-hidden /> Khate
-        </Link>
+        {tabs.map(({ key, href, label, Icon }) => {
+          const on = active === key;
+          return (
+            <Link
+              key={key}
+              href={href}
+              aria-current={on ? "page" : undefined}
+              className={cn(
+                "relative flex h-[4.25rem] flex-1 flex-col items-center justify-center gap-0.5 text-base font-semibold",
+                on ? "text-ink" : "text-ink-soft",
+              )}
+            >
+              <span aria-hidden className={cn("absolute top-0 h-1 w-12 rounded-b-full", on ? "bg-marigold" : "bg-transparent")} />
+              <Icon className="h-6 w-6" strokeWidth={on ? 2.5 : 2} aria-hidden />
+              {label}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

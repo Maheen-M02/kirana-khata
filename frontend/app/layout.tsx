@@ -1,23 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
+import { Anek_Devanagari } from "next/font/google";
 import "./globals.css";
 
 import { SwRegister } from "@/components/sw-register";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
+// One family for Latin and Devanagari names; the width axis gives condensed money figures.
+const anek = Anek_Devanagari({
+  subsets: ["latin", "devanagari"],
+  axes: ["wdth"],
+  variable: "--font-anek",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Kirana Khata",
-  description: "Bolo, aur hisaab likh jayega — voice khata for kirana shops",
+  description: "Bolo, aur hisaab likh jayega: voice khata for kirana shops",
   applicationName: "Kirana Khata",
   icons: { icon: "/icon.svg", apple: "/icons/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "Khata", statusBarStyle: "default" },
@@ -26,19 +23,13 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#18181b",
+  themeColor: "#1B2559",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="hi">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="hi" className={anek.variable}>
+      <body>
         {children}
         <SwRegister />
       </body>

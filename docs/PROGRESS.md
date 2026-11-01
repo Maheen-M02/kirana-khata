@@ -163,3 +163,28 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 **Bugs caught by tests:** the limiters' `now or time.monotonic()` treated `now=0` as missing.
 
 **Not done:** IndexedDB offline queue, Sentry. The Lighthouse run on `/login` didn't save output, so it's not measured.
+
+## First live mic test and UI redesign (2026-11-01)
+
+**Live test (the user, real mic, approved; 6 credits, cap set to 15 for the session; 15 used today)**
+
+| Turn | Heard (Prisma) | Result |
+|---|---|---|
+| 1 | "आज मुझे 10 रुपये के 5 टमाटर मिले, but मैंने उन्हें कहा था कि 100 रुपये के 5 टमाटर देना।" | Transcribed exactly, including the English "but". The rules parser read it as a ₹100 cash sale, flagged `multiple_amounts`. The user said Nahi, so **nothing was written**. |
+| 2 | "शर्मा जी ने 120 उधार लिए।" | Asked which Sharma, the user tapped Ramesh, then Haan. ₹120 udhaar booked (entry 8). |
+| 3 | n/a | Refused by the session cap with "Aaj ki awaaz limit poori ho gayi." No call made. |
+
+- **Latency:** STT 669–693 ms; TTS 650–1406 ms; a full spoken turn 1.5–1.8 s; NLU 0–8 ms.
+- **Credits per tap:** each tapped answer (Haan, picking a customer) costs one TTS credit for the spoken reply.
+- **NLU follow-ups:** when `multiple_amounts` is flagged, ask "10 ya 100?" instead of picking one. Item names keep trailing words ("tamaatar mile but").
+- **Bookkeeping bug:** confirm turns add their TTS time to `latency_tts_ms` but leave `latency_total_ms` unchanged.
+- **Final message silent:** the last "Likh diya" message had no audio (the cap refused TTS), but the entry was written and the text shown. A TTS failure never blocks a confirmed write.
+
+**UI redesign:** see [FRONTEND.md](FRONTEND.md#visual-design).
+- Fixed the broken colour tokens (`hsl(oklch())`).
+- New brand: ink, marigold and ledger ruling; Anek Devanagari type.
+- Login: a brand panel, a +91 field, 4-box PIN with auto-submit.
+- Home: shop name and Hinglish date, a conversation layout, a live mic-level ring, and Bikri and Jama-aaya tiles.
+- Ledger-style lists; a customer list with relative due bars; a customer page with a "Paise mile? Boliye…" voice hint.
+- New PWA icons.
+- vitest 35 passed. Lighthouse accessibility 100 on all four screens.
