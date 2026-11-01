@@ -1,0 +1,39 @@
+# Prod-parity stack: backend container + Postgres. Frontend runs via `make dev` or Vercel.
+# Usage: make docker-up   (reads ../.env for Gnani/Evon settings)
+name: kirana-khata
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: kirana
+      POSTGRES_PASSWORD: kirana
+      POSTGRES_DB: kirana
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kirana -d kirana"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ../backend
+    env_file:
+      - path: ../.env
+        required: false
+    environment:
+      APP_ENV: prod
+      DATABASE_URL: postgresql://kirana:kirana@db:5432/kirana
+      FRONTEND_ORIGIN: http://localhost:3000
+    ports: ["8000:8000"]
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:
