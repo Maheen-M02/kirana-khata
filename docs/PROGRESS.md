@@ -188,3 +188,17 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 - Ledger-style lists; a customer list with relative due bars; a customer page with a "Paise mile? Boliye…" voice hint.
 - New PWA icons.
 - vitest 35 passed. Lighthouse accessibility 100 on all four screens.
+
+## Marketing site (2026-11-02)
+
+- **Audience:** real shopkeepers (the user's call), so the copy is Hinglish first. No domain yet, so the plan is free Vercel addresses, and the app link is configurable with `NEXT_PUBLIC_APP_URL`.
+- **What was built:** `site/`, a static Next.js export ([SITE.md](SITE.md)).
+  - The hero plays a real exchange using two Timbre clips from the 2026-11-01 live test, matched to their text by recomputing the cache key. No new credits.
+  - The rest of the page: things you can say (with real template replies), the three-step loop, trust points, add-to-home-screen steps and an FAQ.
+- **Font:** Google's Anek Devanagari shipped a 726 KB Devanagari file that loaded before first paint (Lighthouse performance 65; FCP 5.3 s on simulated mobile). It's now self-hosted and subset to Latin + ₹ (115 KB, both axes kept), in both the site and the app. Devanagari falls back to the system font (Noto Sans Devanagari on Android).
+- **Lighthouse mobile, after the font fix:** Performance **97**, Accessibility 100, Best practices 100, SEO 100. FCP 1.6 s, LCP 2.3 s, CLS 0.02.
+- **CI:** a new `site` job runs lint, typecheck and build, and checks that the export contains the page and both clips.
+- **Open questions for the user:**
+  - Self-serve sign-up doesn't exist, so the CTA opens the app's login.
+  - Pricing isn't stated.
+  - Contact or WhatsApp details for onboarding are missing.

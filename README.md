@@ -28,7 +28,7 @@ flowchart LR
   A -- haan / ✓ --> I[(Append-only ledger<br/>paise, reversals)]
 ```
 
-More detail: [ARCHITECTURE](docs/ARCHITECTURE.md) · [VOICE](docs/VOICE.md) · [NLU](docs/NLU.md) · [LEDGER](docs/LEDGER.md) · [API](docs/API.md) · [FRONTEND](docs/FRONTEND.md).
+More detail: [ARCHITECTURE](docs/ARCHITECTURE.md) · [VOICE](docs/VOICE.md) · [NLU](docs/NLU.md) · [LEDGER](docs/LEDGER.md) · [API](docs/API.md) · [FRONTEND](docs/FRONTEND.md) · [SITE](docs/SITE.md).
 
 ## Design decisions (summary)
 
@@ -59,6 +59,7 @@ cp .env.example .env        # add GNANI_API_KEY; keep NLU_MODE=rules until Evon 
 make install
 make seed                   # demo shop + customers (login 9999999999 / PIN 1234, dev only)
 make dev                    # backend http://localhost:8000, frontend http://localhost:3000
+make site-dev               # marketing site http://localhost:3001 (static export: make site-build)
 make lint test              # ruff, mypy --strict, eslint, tsc, pytest, vitest
 make docker-up              # backend + Postgres in Docker (prod parity)
 make smoke-voice FILE=clip.webm   # live Gnani STT -> TTS round trip (spends ~2 credits)

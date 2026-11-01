@@ -13,7 +13,7 @@ BACKEND_PORT  ?= 8000
 FRONTEND_PORT ?= 3000
 
 .PHONY: help install dev dev-backend dev-frontend test test-backend test-frontend \
-        lint lint-backend lint-frontend fmt migrate seed set-pin smoke-voice tts-say test-live eval-nlu evon-warm docker-up docker-down
+        lint lint-backend lint-frontend lint-site site-dev site-build fmt migrate seed set-pin smoke-voice tts-say test-live eval-nlu evon-warm docker-up docker-down
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-16s %s\n",$$1,$$2}'
@@ -21,6 +21,7 @@ help: ## List targets
 install: ## Install backend (uv) and frontend (pnpm) deps
 	cd backend && $(UV) sync
 	cd frontend && $(PNPM) install --frozen-lockfile
+	cd site && $(PNPM) install --frozen-lockfile
 
 dev: ## Run backend :8000 and frontend :3000 together (Ctrl-C stops both)
 	@trap 'kill 0' INT TERM EXIT; \
@@ -43,13 +44,22 @@ test-backend:  ## set TEST_DATABASE_URL=postgresql://... to also run ledger test
 test-frontend:
 	cd frontend && $(PNPM) test
 
-lint: lint-backend lint-frontend ## ruff + mypy + eslint + tsc
+lint: lint-backend lint-frontend lint-site ## ruff + mypy + eslint + tsc (app and marketing site)
 
 lint-backend:
 	cd backend && $(UV) run ruff check . && $(UV) run ruff format --check . && $(UV) run mypy
 
 lint-frontend:
 	cd frontend && $(PNPM) lint && $(PNPM) typecheck
+
+lint-site:
+	cd site && $(PNPM) lint && $(PNPM) typecheck
+
+site-dev: ## Marketing site on :3001 (NEXT_PUBLIC_APP_URL points its buttons at the app)
+	cd site && $(PNPM) dev
+
+site-build: ## Static export of the marketing site to site/out
+	cd site && $(PNPM) build
 
 fmt: ## Auto-format backend
 	cd backend && $(UV) run ruff format . && $(UV) run ruff check --fix .

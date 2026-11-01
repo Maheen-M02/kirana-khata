@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Same palette as the app. Bare HSL triplets; tailwind wraps them as hsl(var(--x) / alpha). */
+@layer base {
+  :root {
+    color-scheme: light;
+    --paper: 60 20% 97.5%;
+    --ink: 229 53% 23%;
+    --ink-soft: 229 18% 43%;
+    --marigold: 40 100% 48%;
+    --marigold-deep: 34 100% 40%;
+    --marigold-wash: 43 100% 92%;
+    --udhaar: 357 67% 45%;
+    --udhaar-wash: 357 75% 96%;
+    --jama: 162 72% 27%;
+    --jama-wash: 155 50% 94%;
+    --rule: 222 30% 89%;
+    --margin: 357 60% 79%;
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-paper font-sans text-ink antialiased;
+  }
+  :focus-visible {
+    outline: 3px solid hsl(var(--marigold-deep));
+    outline-offset: 3px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .w-condensed {
+    font-variation-settings: "wdth" 78;
+  }
+  .w-wide {
+    font-variation-settings: "wdth" 118;
+  }
+  .num {
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  /* Khata page: red double margin before a right-hand column of the given width. */
+  .ledger-margin {
+    --col: 9rem;
+    background-image: linear-gradient(
+      to right,
+      transparent calc(100% - var(--col)),
+      hsl(var(--margin)) calc(100% - var(--col)),
+      hsl(var(--margin)) calc(100% - var(--col) + 1px),
+      transparent calc(100% - var(--col) + 1px),
+      transparent calc(100% - var(--col) + 4px),
+      hsl(var(--margin)) calc(100% - var(--col) + 4px),
+      hsl(var(--margin)) calc(100% - var(--col) + 5px),
+      transparent calc(100% - var(--col) + 5px)
+    );
+  }
+  /* Faint blue ruling, like the pages of a bahi. */
+  .ruled {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(2.75rem - 1px),
+      hsl(var(--rule)) calc(2.75rem - 1px),
+      hsl(var(--rule)) 2.75rem
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
