@@ -9,6 +9,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: no Gnani/Evon keys or .env in tracked files
+        run: |
+          if git ls-files | grep -qxE '(.*/)?\.env'; then echo "::error::.env is tracked"; exit 1; fi
+          if git grep -nIE 'vach_[A-Za-z0-9_]{20,}' -- . ; then echo "::error::Gnani API key committed"; exit 1; fi
+
   backend:
     runs-on: ubuntu-latest
     defaults:
