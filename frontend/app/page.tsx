@@ -1,38 +1,45 @@
-import { Mic } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
-import { getHealth } from "@/lib/api";
+import { BottomNav } from "@/components/bottom-nav";
+import { EntryList } from "@/components/entry-list";
+import { VoiceConsole } from "@/components/voice-console";
+import { getHealth, getJson, type Entry, type Sales } from "@/lib/api";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const health = await getHealth();
-  const online = health.status === "online";
+  const [health, sales, entries] = await Promise.all([
+    getHealth(),
+    getJson<Sales>("/reports/today"),
+    getJson<Entry[]>("/ledger/entries?day=today&limit=20"),
+  ]);
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col items-center justify-between px-4 py-8">
-      <header className="flex w-full items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Kirana Khata</h1>
-        <Badge variant={online ? "default" : "destructive"} aria-live="polite">
-          {online ? "Server chalu hai" : "Server band hai"}
-        </Badge>
-      </header>
+    <>
+      <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-6 px-4 pb-28 pt-6">
+        <header className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold tracking-tight">Kirana Khata</h1>
+          {health.status === "offline" && (
+            <span role="alert" className="rounded-full bg-destructive px-3 py-1 text-sm font-semibold text-destructive-foreground">
+              Server band hai
+            </span>
+          )}
+        </header>
 
-      <section className="flex flex-col items-center gap-6 text-center">
-        <p className="text-lg text-muted-foreground">Bolo, aur hisaab likh jayega.</p>
-        {/* Recorder arrives in Phase 5 — placeholder keeps the one-thumb layout honest. */}
-        <button
-          type="button"
-          disabled
-          aria-label="Bolne ke liye dabaye rakhiye (jaldi aa raha hai)"
-          className="flex h-40 w-40 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg disabled:opacity-60"
-        >
-          <Mic className="h-16 w-16" aria-hidden />
-        </button>
-        <p className="text-sm text-muted-foreground">Dabaye rakhiye aur boliye — jaldi aa raha hai</p>
-      </section>
+        <VoiceConsole />
 
-      <footer className="text-xs text-muted-foreground">Built on Gnani AI · Prisma · Evon · Timbre</footer>
-    </main>
+        <section aria-labelledby="today" className="flex flex-col gap-3">
+          <div className="flex items-baseline justify-between">
+            <h2 id="today" className="text-lg font-bold">Aaj</h2>
+            {sales && (
+              <p className="text-base">
+                Bikri <span className="font-bold tabular-nums">{sales.total_display}</span>
+                <span className="text-muted-foreground"> · {sales.entries} entry</span>
+              </p>
+            )}
+          </div>
+          <EntryList entries={entries ?? []} />
+        </section>
+      </main>
+      <BottomNav active="home" />
+    </>
   );
 }

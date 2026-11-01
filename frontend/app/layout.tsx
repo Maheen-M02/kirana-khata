@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
+import { SwRegister } from "@/components/sw-register";
+
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
@@ -17,7 +19,8 @@ export const metadata: Metadata = {
   title: "Kirana Khata",
   description: "Bolo, aur hisaab likh jayega — voice khata for kirana shops",
   applicationName: "Kirana Khata",
-  icons: { icon: "/icon.svg" },
+  icons: { icon: "/icon.svg", apple: "/icons/apple-touch-icon.png" },
+  appleWebApp: { capable: true, title: "Khata", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -37,6 +40,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <SwRegister />
       </body>
     </html>
   );

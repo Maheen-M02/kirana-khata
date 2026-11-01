@@ -9,8 +9,8 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 | 2. NLU | ✅ done (rules gate met offline; Evon eval waiting on hosting) | 2026-11-01 |
 | 3. Ledger | ✅ done (SQLite + Postgres) | 2026-11-01 |
 | 4. Voice loop API | ✅ done (fakes; live end-to-end run pending approval) | 2026-11-01 |
-| 5. Frontend | ⏳ next | |
-| 6. Hardening | — | |
+| 5. Frontend | ✅ done locally (Android over HTTPS waits for deploy) | 2026-11-01 |
+| 6. Hardening | ⏳ next | |
 | 7. Deploy | — | |
 | 8. Demo kit | — | |
 
@@ -124,3 +124,21 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 - A live end-to-end run against real Gnani (about 2–4 credits) to measure real latency through the API. Waiting for approval.
 - TTS streams to the browser as a cached mp3 URL (REST), not SSE. That's fine for cached phrases; I'll revisit if the p50 is over budget.
 - The DB calls are sync inside async routes. That's fine for one shop; noted for scale.
+
+## Phase 5: Frontend (2026-11-01)
+
+**Done**
+- Screens: home (mic, confirm card, today), customer list, customer detail. A bottom nav (Bolo / Khate) with 48 px+ targets.
+- The voice console: a hold-to-talk recorder, the reducer state machine, Timbre playback with barge-in, ✓/✗ and option taps, amount entry, a mic-denied explanation, and offline and error messages. See [FRONTEND.md](FRONTEND.md).
+- The PWA: manifest, PNG icons (any + maskable), service worker (never caches the API), offline page, security headers.
+
+**Metrics**
+- Lighthouse mobile on the production build: Performance, Accessibility and Best Practices all **100** on `/` and `/customers`.
+- vitest: 35 passed (including component tests of the real recorder flow).
+
+**Incident:** a local smoke test through the proxy used a typed transcript, which skips STT, but the backend still had the real key, so **Timbre spent 1 unapproved credit** (8 used today: 7 approved + 1). From now on, local UI testing runs with `GNANI_API_KEY=` blanked.
+
+**Open issues**
+- The spec's "Lighthouse PWA ≥ 90" category no longer exists in Lighthouse 12; installability was checked manually.
+- Android Chrome over HTTPS: test after deploy (Phase 7).
+- Offline recording queue (IndexedDB): an "additional feature", not built yet.

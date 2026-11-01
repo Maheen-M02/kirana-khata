@@ -28,7 +28,7 @@ flowchart LR
   A -- haan / ✓ --> I[(Append-only ledger<br/>paise, reversals)]
 ```
 
-More detail: [ARCHITECTURE](docs/ARCHITECTURE.md) · [VOICE](docs/VOICE.md) · [NLU](docs/NLU.md) · [LEDGER](docs/LEDGER.md) · [API](docs/API.md).
+More detail: [ARCHITECTURE](docs/ARCHITECTURE.md) · [VOICE](docs/VOICE.md) · [NLU](docs/NLU.md) · [LEDGER](docs/LEDGER.md) · [API](docs/API.md) · [FRONTEND](docs/FRONTEND.md).
 
 ## Design decisions (summary)
 
@@ -48,6 +48,7 @@ Only numbers that have actually been measured are listed. The rest come later (E
 | Amounts wrong *and* unflagged (CI gate) | 0 |
 | Prisma STT v3 round trip | 518–637 ms |
 | Timbre v3.0 time to first audio (SSE) | 308 ms |
+| Lighthouse mobile (`/`, `/customers`) | Perf 100 · A11y 100 · Best practices 100 |
 
 ## Run locally
 
