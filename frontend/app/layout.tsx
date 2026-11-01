@@ -1,13 +1,14 @@
 import type { Metadata, Viewport } from "next";
-import { Anek_Devanagari } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 import { SwRegister } from "@/components/sw-register";
 
-// One family for Latin and Devanagari names; the width axis gives condensed money figures.
-const anek = Anek_Devanagari({
-  subsets: ["latin", "devanagari"],
-  axes: ["wdth"],
+// Anek Devanagari, self-hosted and subset to Latin + ₹ (115 KB, both axes kept); see
+// app/fonts/README.txt. Devanagari text uses the phone's own font (Noto Sans Devanagari).
+const anek = localFont({
+  src: "./fonts/AnekDevanagari-Latin-wdth-wght.woff2",
+  weight: "100 800",
   variable: "--font-anek",
   display: "swap",
 });

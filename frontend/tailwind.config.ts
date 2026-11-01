@@ -37,7 +37,7 @@ const config: Config = {
         ring: token("ring"),
       },
       fontFamily: {
-        sans: ["var(--font-anek)", "Noto Sans Devanagari", "system-ui", "sans-serif"],
+        sans: ["var(--font-anek)", "Noto Sans Devanagari", "Nirmala UI", "system-ui", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
