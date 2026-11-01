@@ -10,8 +10,8 @@
 | Gnani model | Role in the loop | Where in code |
 |---|---|---|
 | **Prisma v3.0** (STT) | Hinglish, Hindi or Marathi speech → transcript | `backend/app/voice/gnani_stt.py` |
-| **Evon v3.3 30B-A3B** (LLM) | Transcript → strict JSON intent, cross-checked by a rules parser | `backend/app/nlu/` (Phase 2) |
-| **Timbre v2.5** (TTS) | Spoken confirmation and balance ("Sahi hai?"), streamed over SSE | `backend/app/voice/gnani_tts.py` |
+| **Evon v3.3 30B-A3B** (LLM) | Transcript → strict JSON intent, cross-checked by a deterministic rules parser | `backend/app/nlu/` ([docs/NLU.md](docs/NLU.md)) |
+| **Timbre v3.0** (TTS, voice Shivani) | Spoken confirmation and balance ("Sahi hai?"), streamed over SSE | `backend/app/voice/gnani_tts.py` |
 
 ## Architecture
 
@@ -39,7 +39,15 @@ More detail is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/VOICE.m
 
 ## Measured results
 
-To be filled in from real runs (Phases 2, 4 and 7): golden-set accuracy by tag, p50/p95 voice-turn latency, and noisy-audio results. No numbers are claimed before they're measured.
+Only numbers that have actually been measured are listed. The rest come later (Evon accuracy, p50/p95 latency, noisy audio).
+
+| What | Result |
+|---|---|
+| Rules NLU on 30 **blind holdout** utterances (first run) | 90.0% intent, 96.7% customer |
+| Rules NLU on the 81-case golden set | 100% intent, 54/54 amounts |
+| Amounts wrong *and* unflagged (CI gate) | 0 |
+| Prisma STT v3 round trip | 518–637 ms |
+| Timbre v3.0 time to first audio (SSE) | 308 ms |
 
 ## Run locally
 
@@ -61,7 +69,7 @@ make smoke-voice FILE=clip.webm   # live Gnani STT -> TTS round trip (spends ~2 
 
 ### Env vars
 
-See [.env.example](.env.example). The key ones are `GNANI_API_KEY`, `GNANI_STT_MODEL=prisma-v3.0`, `GNANI_STT_LANGUAGE=hi-IN,en-IN`, `GNANI_STT_FORMAT`, `GNANI_TTS_MODEL=timbre-v2.5`, `GNANI_TTS_VOICE=Poorvi`, `GNANI_CREDIT_GUARD`, `EVON_BASE_URL`, `NLU_MODE` (`rules|hybrid|evon`), `DATABASE_URL` and `JWT_SECRET`.
+See [.env.example](.env.example). The key ones are `GNANI_API_KEY`, `GNANI_STT_MODEL=prisma-v3.0`, `GNANI_STT_LANGUAGE=hi-IN,en-IN`, `GNANI_STT_FORMAT`, `GNANI_TTS_MODEL=timbre-v3.0`, `GNANI_TTS_VOICE=Shivani`, `GNANI_CREDIT_GUARD`, `EVON_BASE_URL`, `NLU_MODE` (`rules|hybrid|evon`), `DATABASE_URL` and `JWT_SECRET`.
 
 ## Deploy (Phase 7)
 

@@ -6,8 +6,8 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 |---|---|---|
 | 0. Setup | ✅ done: CI green on GitHub | 2026-11-01 |
 | 1. Gnani voice | ✅ done: live round trip passed, recorded fixtures replay | 2026-11-01 |
-| 2. NLU | ⏳ next | |
-| 3. Ledger | — | |
+| 2. NLU | ✅ done (rules gate met offline; Evon eval waiting on hosting) | 2026-11-01 |
+| 3. Ledger | ⏳ next | |
 | 4. Voice loop API | — | |
 | 5. Frontend | — | |
 | 6. Hardening | — | |
@@ -60,3 +60,29 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 - The credit counter lives in a JSON file; it moves to the DB in Phase 3.
 - The `transliterate` vs `transcribe` comparison was deferred to Phase 2 (stayed within the 6-credit budget).
 - Windows consoles needed `PYTHONUTF8=1` to print Devanagari; the Makefile now exports it.
+
+## Phase 2: NLU (2026-11-01)
+
+**Done**
+- `app/nlu/`: translit, numbers_hi, rules, resolver, schema, prompts, evon_client, parser (Rules, Evon and Hybrid), templates, factory. See [NLU.md](NLU.md).
+- Golden sets: `golden_utterances.yaml` (81 cases, all skill tags) and `golden_holdout.yaml` (30 blind cases).
+- `infra/evon/`: Modal vLLM script (flags checked against the HF card) plus a README. Not deployed.
+- `make eval-nlu`, `make evon-warm`, and the live golden eval (`tests/live/test_evon_golden_live.py`).
+- Voice switched to timbre-v3.0 Shivani (owner's choice). Ran the `transliterate` A/B (1 credit; 7 used today).
+
+**Metrics**
+- Rules on golden: 100% intent, 100% customer, 54/54 amounts. **Blind holdout, first run: 90.0% intent, 96.7% customer, 1 amount wrong and unflagged.** All fixed; holdout is now 100%.
+- numbers_hi: 99 parse and 99 speak golden cases, plus Hypothesis round trips (speak → parse up to ₹99,99,999.99).
+- pytest: 363 passed (5 live deselected).
+
+**Safety bugs found and fixed this phase**
+- Two numbers, one marked as money: the other was silently ignored ("Raju 500 ka saman…, 200 de gaya" booked 500 with no flag). Any extra number now forces a read-back.
+- Resolver: "Suresh Sharma" scored 100 against the alias "Sharma ji" of *Ramesh* Sharma. Per-word scoring fixed it.
+- Evon `Decimal` amounts crashed `to_paise`; they now convert exactly via `Fraction`.
+
+**Not done**
+- Evon accuracy is unmeasured: there's no hosted endpoint. The ≥90% gate is met by the rules parser alone, which is the guaranteed fallback.
+
+**Open issues**
+- Golden cases are self-written. Real shop recordings (QA skill: 20+ clips) are needed before filming.
+- `customer_missing` money entries (no name heard) need a UI path in Phase 4/5.

@@ -1,0 +1,93 @@
+# HOLDOUT set: written after the rules were tuned on golden_utterances.yaml, and NOT used for
+# tuning. Its score is the honest generalisation estimate. Do not edit cases to make them pass;
+# add new cases instead and record the before/after in docs/PROGRESS.md.
+- transcript: "Agarwal ji ko 2 kilo aata diya, 90 rupaye udhaar likh dena"
+  expected: {intent: credit_sale, customer: agarwal, amount_paise: 9000}
+  tags: [hinglish]
+- transcript: "Bunty ne do Thums Up li, chaalis rupaye, khate mein daal do"
+  expected: {intent: credit_sale, customer: bunty, amount_paise: 4000}
+  tags: [hinglish]
+- transcript: "Lata ji 175 rupaye baad mein dengi"
+  expected: {intent: credit_sale, customer: lata, amount_paise: 17500}
+  tags: [hinglish]
+- transcript: "सिंह साहब का 640 रुपये उधार चढ़ा दो"
+  expected: {intent: credit_sale, customer: singh, amount_paise: 64000}
+  tags: [hindi_deva]
+- transcript: "पांडे जी ने दो सौ पचास का सामान उधार लिया"
+  expected: {intent: credit_sale, customer: pandey, amount_paise: 25000}
+  tags: [hindi_deva]
+- transcript: "Raju bhaiya ne saadhe paanch sau udhaar liye"
+  expected: {intent: credit_sale, customer: raju, amount_paise: 55000}
+  tags: [hinglish, fraction]
+- transcript: "Chopra madam 1500 udhaar"
+  expected: {intent: credit_sale, customer: chopra, amount_paise: 150000}
+  tags: [hinglish]
+- transcript: "Agarwal ji ne pichhla 500 chuka diya"
+  expected: {intent: payment_received, customer: agarwal, amount_paise: 50000}
+  tags: [hinglish]
+- transcript: "Bunty ne PhonePe pe 230 bheje hain"
+  expected: {intent: payment_received, customer: bunty, amount_paise: 23000}
+  tags: [hinglish]
+- transcript: "सिंह साहब ने 2000 रुपये जमा कर दिए"
+  expected: {intent: payment_received, customer: singh, amount_paise: 200000}
+  tags: [hindi_deva]
+- transcript: "Lata ji aaj teen sau de gayi"
+  expected: {intent: payment_received, customer: lata, amount_paise: 30000}
+  tags: [hinglish]
+- transcript: "Pandey ji se dedh hazaar mil gaye"
+  expected: {intent: payment_received, customer: pandey, amount_paise: 150000}
+  tags: [hinglish, fraction]
+- transcript: "Raju ne 99 rupaye ka recharge cash diya"
+  expected: {intent: cash_sale, customer: raju, amount_paise: 9900}
+  tags: [hinglish]
+- transcript: "ek kilo pyaaz chaalis rupaye nagad"
+  expected: {intent: cash_sale, customer: null, amount_paise: 4000}
+  tags: [hinglish]
+- transcript: "दो साबुन 70 रुपये कैश"
+  expected: {intent: cash_sale, customer: null, amount_paise: 7000}
+  tags: [hindi_deva]
+- transcript: "Chopra madam ka total kitna hua"
+  expected: {intent: query_balance, customer: chopra, amount_paise: null}
+  tags: [query]
+- transcript: "Bunty ka kitna dena baaki hai"
+  expected: {intent: query_balance, customer: bunty, amount_paise: null}
+  tags: [query]
+- transcript: "सिंह साहब का खाता दिखाओ"
+  expected: {intent: query_balance, customer: singh, amount_paise: null}
+  tags: [query, hindi_deva]
+- transcript: "aaj dukaan mein kitna bika"
+  expected: {intent: query_sales_today, customer: null, amount_paise: null}
+  tags: [query]
+- transcript: "आज की कमाई कितनी है"
+  expected: {intent: query_sales_today, customer: null, amount_paise: null}
+  tags: [query, hindi_deva]
+- transcript: "kaun kaun udhaar le ke baitha hai"
+  expected: {intent: query_dues_list, customer: null, amount_paise: null}
+  tags: [query]
+- transcript: "जिनका बाकी है उनकी लिस्ट बताओ"
+  expected: {intent: query_dues_list, customer: null, amount_paise: null}
+  tags: [query, hindi_deva]
+- transcript: "abhi wali entry galat thi, mita do"
+  expected: {intent: undo_last, customer: null, amount_paise: null}
+  tags: [undo]
+- transcript: "जी हाँ"
+  expected: {intent: confirm_yes, customer: null, amount_paise: null}
+  tags: [confirm]
+- transcript: "haan haan likh do"
+  expected: {intent: confirm_yes, customer: null, amount_paise: null}
+  tags: [confirm]
+- transcript: "nahi nahi ruko"
+  expected: {intent: confirm_no, customer: null, amount_paise: null}
+  tags: [confirm]
+- transcript: "जोशी काकांनी 400 रुपये उधार नेले"
+  expected: {intent: credit_sale, customer: joshi, amount_paise: 40000}
+  tags: [marathi]
+- transcript: "agarwal ji ne nabbe rupaye udhar"
+  expected: {intent: credit_sale, customer: agarwal, amount_paise: 9000}
+  tags: [noisy_typo]
+- transcript: "Raju 500 ka saman le gaya, 200 de gaya"
+  expected: {intent: credit_sale, customer: raju, amount_paise: 30000}
+  tags: [adversarial]
+- transcript: "Pandey ji ka chaar sau... sorry, chaar sau pachaas udhaar"
+  expected: {intent: credit_sale, customer: pandey, amount_paise: 45000}
+  tags: [adversarial]

@@ -26,11 +26,14 @@
 |---|---|---|
 | 2026-11-01 | Sync SQLAlchemy instead of async | Simpler Alembic setup, and one code path for SQLite and Postgres. DB calls are tiny next to the STT and TTS round trips. |
 | 2026-11-01 | One Gnani semaphore shared by STT and TTS | The live docs say the 1-active-request limit applies per account ([DOC_DIFFS #1](DOC_DIFFS.md)). |
-| 2026-11-01 | `timbre-v2.5` with voice `Poorvi` and `hi-en` | Poorvi is the only v2.5 voice whose preferred language is Hinglish. `timbre-v3.0` + `Shivani` is the A/B alternative for Phase 1. |
+| 2026-11-01 | ~~`timbre-v2.5` + `Poorvi`~~, replaced by **`timbre-v3.0` + `Shivani` + `hi-en`** | Chosen by the owner after a live A/B. It also had the faster first chunk (308 vs 368 ms). |
 | 2026-11-01 | Start with `NLU_MODE=rules`; Evon hosting is undecided | Unblocks Phases 2–4. Evon gets swapped in through the adapter once it's hosted (GPU vLLM is preferred for latency). |
 | 2026-11-01 | Evon dev URL is `:8080` | The kit's default `:8000` clashed with the backend. 8080 is llama-server's default. |
 | 2026-11-01 | Deploy targets: Render (backend), Vercel (frontend), Neon (Postgres) | Free tiers, Docker support, and HTTPS by default. |
+| 2026-11-01 | STT `format=transcribe` stays the default | Live A/B on the same clip: `transcribe` gave `120`/`2 kg` as digits plus Devanagari words (637 ms); `transliterate` gave Latin with numbers as words (592 ms). Digits remove the riskiest failure (misheard number words). Rules handle both. |
+| 2026-11-01 | Custom Devanagari romaniser, not `indic-transliteration` | Colloquial spellings ("udhaar") so one keyword and number table serves both scripts. |
+| 2026-11-01 | Evon served by vLLM on Modal (H100), script prepared but not deployed | The HF card confirms the vLLM flags. `nemotron_h` makes GGUF support uncertain. See `infra/evon/README.md`. |
 
 ## Evon hosting
 
-Undecided. Recorded options are in `.claude/skills/evon-llm/SKILL.md`. This section gets updated when one is chosen.
+Planned: vLLM on Modal (one H100, scale to zero, warm before filming). The script and steps are in [`infra/evon/`](../infra/evon/README.md). Until it's deployed, `NLU_MODE=rules`.

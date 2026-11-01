@@ -51,7 +51,9 @@ For TTS audio of *"Sharma ji ne do kilo cheeni li, ek sau bees rupaye udhaar."*,
 
 | Option | First chunk | Audio length | File |
 |---|---|---|---|
-| `timbre-v2.5` + `Poorvi` + `hi-en` (current default) | 368 ms | 3.6 s | `backend/var/smoke/ab_poorvi_v25.mp3` |
-| `timbre-v3.0` + `Shivani` + `hi-en` | 308 ms | 4.1 s | `backend/var/smoke/ab_shivani_v30.mp3` |
+| `timbre-v2.5` + `Poorvi` + `hi-en` | 368 ms | 3.6 s | `backend/var/smoke/ab_poorvi_v25.mp3` |
+| **`timbre-v3.0` + `Shivani` + `hi-en` (chosen, now the default)** | 308 ms | 4.1 s | `backend/var/smoke/ab_shivani_v30.mp3` |
 
-Pick by ear; set `GNANI_TTS_MODEL` and `GNANI_TTS_VOICE`.
+The owner picked Shivani by ear on 2026-11-01. Change it with `GNANI_TTS_MODEL` / `GNANI_TTS_VOICE`.
+
+`transliterate` A/B (1 credit, same clip): `Sharma ji ne do kilo chini li, ek sau bees rupaye udhar.` (592 ms, no `detected_language_code`). `transcribe` stays the default (see ARCHITECTURE decisions).

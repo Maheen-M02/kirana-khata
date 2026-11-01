@@ -11,6 +11,8 @@ dependencies = [
     "pydantic>=2.14.2",
     "pydantic-settings>=2.16.2",
     "python-multipart>=0.0.33",
+    "pyyaml>=6.0.3",
+    "rapidfuzz>=3.14.6",
     "sqlalchemy>=2",
     "structlog>=26.1.0",
     "tzdata>=2026.6",
@@ -25,6 +27,7 @@ dev = [
     "pytest-asyncio>=1.4.1",
     "respx>=0.23.1",
     "ruff>=0.17.3",
+    "types-pyyaml>=6.0.12.20261030",
 ]
 
 [tool.uv]
@@ -44,8 +47,12 @@ known-first-party = ["app"]
 known-third-party = ["alembic"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S105", "S106", "ASYNC240"]
-"scripts/**" = ["ASYNC240"]  # one-shot CLI; blocking file IO is fine
+"tests/**" = ["S105", "S106", "ASYNC240", "E501"]  # data-table lines
+"scripts/**" = ["ASYNC240"]
+# word tables / prompt text / Devanagari maps: long data lines and Indic characters are intended
+"app/nlu/numbers_hi.py" = ["E501"]
+"app/nlu/prompts.py" = ["E501"]
+"app/nlu/translit.py" = ["E501", "RUF001"]  # one-shot CLI; blocking file IO is fine
 
 [tool.mypy]
 python_version = "3.12"

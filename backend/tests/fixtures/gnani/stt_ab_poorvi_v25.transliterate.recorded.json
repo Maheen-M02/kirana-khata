@@ -1,0 +1,9 @@
+{
+  "success": true,
+  "request_id": "01a19706-a078-71f4-9169-2ffc5e86d854",
+  "transcript": "Sharma ji ne do kilo chini li, ek sau bees rupaye udhar.",
+  "model": "prisma-v3.0",
+  "detected_language_code": null,
+  "processing_time": 0.3982675075531006,
+  "end_to_end_latency": 0.4004685878753662
+}

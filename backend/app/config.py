@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     gnani_stt_model: str = "prisma-v3.0"
     gnani_stt_language: str = "hi-IN,en-IN"
     gnani_stt_format: SttFormat = "transcribe"
-    gnani_tts_model: str = "timbre-v2.5"
-    gnani_tts_voice: str = "Poorvi"
+    gnani_tts_model: str = "timbre-v3.0"
+    gnani_tts_voice: str = "Shivani"
     gnani_tts_language: str = "hi-en"
     gnani_tts_speed: float = Field(default=0.95, ge=0.85, le=1.15)
     gnani_max_concurrency: int = Field(default=1, ge=1)
@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     evon_model: str = "evon"
     evon_api_key: SecretStr = SecretStr("")
     evon_timeout_s: float = 4.0
+    # vLLM `response_format: json_object` — enable only if your serving build supports it.
+    evon_guided_json: bool = False
     nlu_mode: NluMode = "rules"
 
     # App

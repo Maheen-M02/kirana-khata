@@ -13,7 +13,7 @@ BACKEND_PORT  ?= 8000
 FRONTEND_PORT ?= 3000
 
 .PHONY: help install dev dev-backend dev-frontend test test-backend test-frontend \
-        lint lint-backend lint-frontend fmt migrate smoke-voice tts-say test-live docker-up docker-down
+        lint lint-backend lint-frontend fmt migrate smoke-voice tts-say test-live eval-nlu evon-warm docker-up docker-down
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-16s %s\n",$$1,$$2}'
@@ -67,6 +67,12 @@ tts-say: ## Live TTS only (SPENDS 1 CREDIT unless cached). make tts-say TEXT="..
 
 test-live: ## Opt-in real Gnani tests (SPENDS CREDITS)
 	cd backend && $(UV) run pytest -m live -s
+
+eval-nlu: ## Golden NLU report on the rules parser (offline, free)
+	cd backend && $(UV) run pytest tests/unit/nlu/test_golden_and_templates.py -k gate -s -q
+
+evon-warm: ## Ping Evon /models (wakes a scaled-to-zero GPU)
+	@set -a; . ./.env; set +a; curl -sf -m 600 -H "Authorization: Bearer $$EVON_API_KEY" "$$EVON_BASE_URL/models" && echo " <- Evon is up" || echo "Evon not reachable at $$EVON_BASE_URL"
 
 docker-up: ## Backend + Postgres via docker compose
 	docker compose -f infra/docker-compose.yml up --build
