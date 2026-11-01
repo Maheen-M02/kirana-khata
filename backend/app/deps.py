@@ -5,13 +5,13 @@ from __future__ import annotations
 from collections.abc import Iterator
 from typing import Annotated
 
-from fastapi import Depends
-from sqlalchemy import select
+from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
+from app.config import Settings, get_settings
 from app.core.errors import AppError
+from app.core.security import SESSION_COOKIE, read_token
 from app.db import get_session
-from app.ledger.models import Shop
 
 
 def db_session() -> Iterator[Session]:
@@ -21,12 +21,13 @@ def db_session() -> Iterator[Session]:
 DbSession = Annotated[Session, Depends(db_session)]
 
 
-def current_shop_id(db: DbSession) -> int:
-    """Phase 3: the single dev shop. Phase 6 replaces this with the phone+PIN JWT cookie;
-    every route already scopes all reads/writes by this id, so nothing else changes."""
-    shop_id = db.scalar(select(Shop.id).order_by(Shop.id).limit(1))
+def current_shop_id(request: Request, settings: Annotated[Settings, Depends(get_settings)]) -> int:
+    """The logged-in shop, from the httpOnly JWT cookie. Every query is scoped by this id,
+    so one shop can never read or write another shop's ledger."""
+    token = request.cookies.get(SESSION_COOKIE)
+    shop_id = read_token(token, settings.jwt_secret.get_secret_value()) if token else None
     if shop_id is None:
-        raise AppError("no_shop", "Dukaan abhi setup nahi hui. `make seed` chalaiye.", 503)
+        raise AppError("unauthenticated", "Login kijiye.", 401)
     return shop_id
 
 

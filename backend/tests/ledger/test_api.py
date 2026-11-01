@@ -80,29 +80,3 @@ def test_alias_learning(api: TestClient) -> None:
     cid = make_customer(api)
     r = api.post(f"/api/customers/{cid}/aliases", json={"alias": "Sharma uncle"})
     assert r.json()["aliases"] == ["Sharma ji", "Sharma uncle"]
-
-
-def test_no_shop_yet_is_a_friendly_503(engine: object) -> None:
-    from collections.abc import Iterator
-
-    from sqlalchemy import Engine
-    from sqlalchemy.orm import Session
-
-    from app.deps import db_session
-    from app.main import create_app
-
-    assert isinstance(engine, Engine)
-    app = create_app()
-
-    def empty() -> Iterator[Session]:
-        # A session whose query for a shop returns nothing.
-        s = Session(engine)
-        s.scalar = lambda *a, **k: None  # type: ignore[method-assign]
-        yield s
-        s.close()
-
-    app.dependency_overrides[db_session] = empty
-    with TestClient(app) as c:
-        r = c.get("/api/customers")
-    assert r.status_code == 503
-    assert "make seed" in r.json()["error"]["message"]

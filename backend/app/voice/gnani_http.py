@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import random
 import time
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -79,6 +80,12 @@ class GnaniTransport:
             request_id=request_id,
         )
 
+    @staticmethod
+    def _tripwire() -> None:
+        """Set by the test suite: any attempt to reach paid Gnani endpoints fails loudly."""
+        if os.environ.get("KK_BLOCK_PAID_CALLS") == "1":
+            raise GnaniError("budget", "paid Gnani calls are blocked in this process (tests)")
+
     async def request(
         self,
         method: str,
@@ -90,6 +97,7 @@ class GnaniTransport:
         **kwargs: Any,
     ) -> httpx.Response:
         """Buffered request. Retries 429/5xx/network/timeouts up to `max_retries` times."""
+        self._tripwire()
         await self.guard.consume(service)
         async with self.gate.slot():
             attempt = 0
@@ -129,6 +137,7 @@ class GnaniTransport:
     ) -> AsyncIterator[httpx.Response]:
         """Streaming request (SSE). Retries only while establishing the response; the gate is
         held until the body is fully consumed, because the request is 'active' until then."""
+        self._tripwire()
         await self.guard.consume(service)
         async with self.gate.slot():
             attempt = 0

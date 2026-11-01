@@ -2,14 +2,19 @@
 
     make seed            (uses DATABASE_URL; run `make migrate` first)
 
-Phase 6 sets a real PIN; until then pin_hash is "!" (login disabled).
+Login: phone 9999999999, PIN from SEED_PIN (default 1234, dev only). Change it with
+`make set-pin PHONE=9999999999 PIN=4821` before any real use.
 """
 
 from __future__ import annotations
 
+import os
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
+from app.core.security import hash_pin
 from app.db import get_engine
 from app.ledger import service as svc
 from app.ledger.models import EntryType, Shop
@@ -35,7 +40,12 @@ HISTORY: list[tuple[str, EntryType, int]] = [
 def seed(db: Session) -> str:
     if db.scalar(select(Shop.id).limit(1)) is not None:
         return "already seeded - nothing to do"
-    shop = svc.create_shop(db, name="Ramesh Kirana Store", owner_phone="9999999999", pin_hash="!")
+    pin = os.environ.get("SEED_PIN") or ("1234" if get_settings().app_env != "prod" else "")
+    if not pin:
+        raise SystemExit("Set SEED_PIN (4 digits) to seed a prod shop")
+    shop = svc.create_shop(
+        db, name="Ramesh Kirana Store", owner_phone="9999999999", pin_hash=hash_pin(pin)
+    )
     ids = {}
     for name, aliases in CUSTOMERS:
         ids[name] = svc.create_customer(db, shop_id=shop.id, display_name=name, aliases=aliases).id

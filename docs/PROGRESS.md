@@ -10,8 +10,8 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 | 3. Ledger | ✅ done (SQLite + Postgres) | 2026-11-01 |
 | 4. Voice loop API | ✅ done (fakes; live end-to-end run pending approval) | 2026-11-01 |
 | 5. Frontend | ✅ done locally (Android over HTTPS waits for deploy) | 2026-11-01 |
-| 6. Hardening | ⏳ next | |
-| 7. Deploy | — | |
+| 6. Hardening | ✅ done (2 items open: offline queue, Sentry) | 2026-11-01 |
+| 7. Deploy | ⏳ next (needs your accounts) | |
 | 8. Demo kit | — | |
 
 ## Phase 0: Setup (2026-11-01)
@@ -142,3 +142,24 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 - The spec's "Lighthouse PWA ≥ 90" category no longer exists in Lighthouse 12; installability was checked manually.
 - Android Chrome over HTTPS: test after deploy (Phase 7).
 - Offline recording queue (IndexedDB): an "additional feature", not built yet.
+
+## Phase 6: Hardening (2026-11-01)
+
+**Done**
+- **Auth:** phone + 4-digit PIN (scrypt, salted, constant-time compare), a 30-day HS256 JWT in an httpOnly SameSite=Lax cookie (Secure in prod), and 5 wrong PINs per 15 minutes per phone and per IP. `/api/auth/login|logout|me`. Every route is scoped by the shop in the token.
+- **Frontend auth:** `/login` page, middleware redirect, server fetches forward the cookie and send a 401 to /login, logout button.
+- **Limits:** 2 MB body limit (checked before reading the body), 30 voice turns per minute per shop.
+- **Startup:** the app refuses to start in prod with a weak `JWT_SECRET`.
+- **Retention:** input audio is deleted after 7 days (startup plus every 6 h).
+- **PIN tooling:** `make set-pin`. The seed sets dev PIN 1234; prod requires `SEED_PIN`.
+- **Test-suite credit guard** (see the incident below), and a [QA_CHECKLIST.md](QA_CHECKLIST.md) table: 26 ✅, 1 🟡, 2 ❌.
+
+**Metrics**
+- pytest: 498 passed on SQLite + Postgres. vitest: 35 passed.
+- End to end on the production build: logged-out `/` → 307 /login; wrong PIN → "Phone ya PIN galat hai."; right PIN → cookie set; home and customers render; `/api/customers` without the cookie → 401.
+
+**Incident 2 (the second unapproved credit; 9 used today):** the new rate-limit test posted to `/voice/turn` without fakes, and the app's startup had built the real Gnani stack from `.env`, so Timbre spoke one reply. **Fix:** a root `pytest_configure` now masks `GNANI_API_KEY` unless the run selects `-m live`, and `GnaniTransport` has a tripwire (`KK_BLOCK_PAID_CALLS`) that refuses any call. Verified: a full test run leaves the counter unchanged.
+
+**Bugs caught by tests:** the limiters' `now or time.monotonic()` treated `now=0` as missing.
+
+**Not done:** IndexedDB offline queue, Sentry. The Lighthouse run on `/login` didn't save output, so it's not measured.

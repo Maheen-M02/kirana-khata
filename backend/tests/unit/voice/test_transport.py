@@ -77,7 +77,11 @@ async def test_network_error_maps_to_upstream(
     assert ei.value.kind == "upstream"
 
 
-async def test_budget_refusal_happens_before_any_http(router: respx.MockRouter) -> None:
+async def test_budget_refusal_happens_before_any_http(
+    router: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("KK_BLOCK_PAID_CALLS", raising=False)  # respx intercepts
+
     class Broke:
         async def consume(self, service: str) -> None:
             raise GnaniError("budget")

@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field, StrictBool, StrictInt, ValidationError
 
 from app.config import Settings, get_settings
 from app.core.errors import AppError
+from app.core.security import RateLimiter
 from app.deps import DbSession, ShopId
 from app.nlu.parser import IntentParser
 from app.voice.gnani_stt import SpeechToText
@@ -27,6 +28,7 @@ from app.voice.turn import TurnResult, VoiceTurnService
 router = APIRouter(prefix="/voice", tags=["voice"])
 
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024
+turn_limiter = RateLimiter(limit=30, window_s=60)  # per shop: 1 turn / 2 s sustained
 _KEY_RE = re.compile(r"^[a-f0-9]{64}$")
 _IDEM_RE = re.compile(r"^[A-Za-z0-9_\-]{8,64}$")
 
@@ -117,6 +119,8 @@ async def voice_turn(
     settings: SettingsDep,
     idempotency_key: Annotated[str | None, Header()] = None,
 ) -> TurnOut:
+    if not turn_limiter.allow(str(shop_id)):
+        raise AppError("rate_limited", "Thoda dheere. Ek second rukiye, phir boliye.", 429)
     if idempotency_key is not None and not _IDEM_RE.match(idempotency_key):
         raise AppError("bad_idempotency_key", "Kuch gadbad ho gayi. Dobara boliye.", 400)
     audio, transcript = await _read_audio(request, settings)

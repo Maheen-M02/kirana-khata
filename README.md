@@ -57,7 +57,7 @@ Prerequisites: Python 3.12 via [uv](https://docs.astral.sh/uv/), Node 20+ with p
 ```bash
 cp .env.example .env        # add GNANI_API_KEY; keep NLU_MODE=rules until Evon is hosted
 make install
-make seed                   # demo shop + customers
+make seed                   # demo shop + customers (login 9999999999 / PIN 1234, dev only)
 make dev                    # backend http://localhost:8000, frontend http://localhost:3000
 make lint test              # ruff, mypy --strict, eslint, tsc, pytest, vitest
 make docker-up              # backend + Postgres in Docker (prod parity)

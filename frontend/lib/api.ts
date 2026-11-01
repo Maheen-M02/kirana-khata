@@ -70,15 +70,24 @@ export async function getHealth(
   }
 }
 
-/** GET JSON from the backend; null on any failure so pages render a friendly empty state. */
+export const SESSION_COOKIE = "kk_session";
+
+/** GET JSON from the backend as the logged-in shop (forwards the httpOnly session cookie).
+ *  401 -> redirect to /login; any other failure -> null so pages show a friendly empty state. */
 export async function getJson<T>(path: string, fetchImpl: typeof fetch = fetch): Promise<T | null> {
+  const { cookies } = await import("next/headers");
+  const { redirect } = await import("next/navigation");
+  const session = cookies().get(SESSION_COOKIE)?.value;
+  let res: Response;
   try {
-    const res = await fetchImpl(`${backendUrl()}/api${path}`, {
+    res = await fetchImpl(`${backendUrl()}/api${path}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(4000),
+      headers: session ? { Cookie: `${SESSION_COOKIE}=${session}` } : {},
     });
-    return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null;
   }
+  if (res.status === 401) redirect("/login");
+  return res.ok ? ((await res.json().catch(() => null)) as T | null) : null;
 }

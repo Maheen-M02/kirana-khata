@@ -4,7 +4,7 @@ Base URL: `/api`. The frontend reaches it through the Next.js rewrite, so it's s
 
 Errors come back as `{"error": {"code": "...", "message": "<short Hinglish line>"}}` and never include a stack trace. Validation errors use FastAPI's 422.
 
-> **Auth:** until Phase 6, every route acts on the single dev shop (`make seed`). Phase 6 adds the phone + PIN JWT cookie. The routes already scope every query by the shop id.
+> **Auth:** `POST /auth/login {phone, pin}` sets an httpOnly `kk_session` cookie (a 30-day JWT). `POST /auth/logout` clears it, and `GET /auth/me` returns the shop. Every route except `/health` and `/ready` returns `401 "Login kijiye."` without it. Wrong PINs are limited to 5 per 15 minutes (429).
 
 ## Health
 

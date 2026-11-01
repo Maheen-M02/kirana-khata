@@ -2,6 +2,7 @@ import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 
 import { BottomNav } from "@/components/bottom-nav";
+import { LogoutButton } from "@/components/logout-button";
 import { getJson, type Customer } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { formatInr } from "@/lib/voice-machine";
@@ -17,7 +18,10 @@ export default async function CustomersPage() {
   return (
     <>
       <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-4 px-4 pb-28 pt-6">
-        <h1 className="text-2xl font-bold">Khate</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold">Khate</h1>
+          <LogoutButton />
+        </div>
         <p className="text-base text-muted-foreground">
           {customers.length} customer · kul baaki{" "}
           <span className="font-bold text-foreground tabular-nums">{formatInr(total)}</span>

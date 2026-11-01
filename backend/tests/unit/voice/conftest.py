@@ -54,8 +54,13 @@ def router() -> AsyncIterator[respx.MockRouter]:
 
 @pytest.fixture
 async def transport(
-    router: respx.MockRouter, guard: CountingGuard, sleeps: SleepRecorder
+    router: respx.MockRouter,
+    guard: CountingGuard,
+    sleeps: SleepRecorder,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> AsyncIterator[GnaniTransport]:
+    # Safe to lift the tripwire here: `router` (respx) intercepts every request to gnani.test.
+    monkeypatch.delenv("KK_BLOCK_PAID_CALLS", raising=False)
     async with httpx.AsyncClient(base_url=BASE) as client:
         yield GnaniTransport(
             client, api_key="test-key", gate=SingleFlight(1), guard=guard, sleep=sleeps

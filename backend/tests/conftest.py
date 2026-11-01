@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -9,6 +10,18 @@ from fastapi.testclient import TestClient
 from app.config import Settings, get_settings
 from app.db import get_engine, make_engine
 from app.main import create_app
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Tests must NEVER spend Gnani credits or call Evon (CLAUDE.md). Unless this run explicitly
+    selects `-m live`, blank the keys (env beats .env) and arm the transport tripwire."""
+    if "live" in (config.getoption("markexpr") or "").replace("not live", ""):
+        return
+    os.environ["GNANI_API_KEY"] = ""
+    os.environ["EVON_API_KEY"] = ""
+    os.environ["NLU_MODE"] = "rules"
+    os.environ["KK_BLOCK_PAID_CALLS"] = "1"
+    get_settings.cache_clear()
 
 
 @pytest.fixture

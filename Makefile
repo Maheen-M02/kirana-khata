@@ -13,7 +13,7 @@ BACKEND_PORT  ?= 8000
 FRONTEND_PORT ?= 3000
 
 .PHONY: help install dev dev-backend dev-frontend test test-backend test-frontend \
-        lint lint-backend lint-frontend fmt migrate seed smoke-voice tts-say test-live eval-nlu evon-warm docker-up docker-down
+        lint lint-backend lint-frontend fmt migrate seed set-pin smoke-voice tts-say test-live eval-nlu evon-warm docker-up docker-down
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-16s %s\n",$$1,$$2}'
@@ -59,6 +59,10 @@ migrate: ## Apply DB migrations
 
 seed: ## Demo shop + customers (idempotent; run after migrate)
 	cd backend && $(UV) run alembic upgrade head && $(UV) run python -m scripts.seed_demo
+
+set-pin: ## Set the owner PIN: make set-pin PHONE=9999999999 PIN=4821
+	@test -n "$(PHONE)" -a -n "$(PIN)" || { echo "Usage: make set-pin PHONE=... PIN=...."; exit 2; }
+	cd backend && $(UV) run python -m scripts.set_pin "$(PHONE)" "$(PIN)"
 
 smoke-voice: ## Live STT -> TTS round trip (SPENDS CREDITS). make smoke-voice FILE=clip.webm [ARGS="--record"]
 	@test -n "$(FILE)" || { echo "Usage: make smoke-voice FILE=path/to/clip [ARGS=...]"; exit 2; }
