@@ -1,1 +1,3 @@
-"""Append-only ledger (Phase 3)."""
+"""Append-only ledger. Importing this package registers the ORM models on Base.metadata."""
+
+from app.ledger import models as models

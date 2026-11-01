@@ -8,7 +8,9 @@ Evon has no public hosted API, so we serve it ourselves behind an OpenAI-compati
 | `hybrid` (target) | Evon for intent and wording; the rules parser re-checks every amount (see `docs/NLU.md`). |
 | `evon` | Evon only. Used for evaluation, never for money in production. |
 
-## Option 1 (recommended): Modal + vLLM on one H100
+## Option 1 (recommended, free in practice): Modal + vLLM on one A100-80GB
+
+Modal's Starter plan includes **$30 of compute per month** (modal.com/pricing, checked 2026-11-01). At $0.000694/s for an A100-80GB that's about 12 GPU-hours a month. Because it scales to zero, we only pay while it answers: golden evaluations (minutes), dev sessions and filming. An H100 ($0.001097/s, about 7.5 h) is faster if latency needs it.
 
 The script is [`modal_vllm.py`](modal_vllm.py). It's prepared but not deployed, because it costs GPU time.
 
@@ -24,6 +26,10 @@ Then set `EVON_BASE_URL=https://<you>--kirana-evon-serve.modal.run/v1` and `NLU_
 - **Cold start:** downloading the model and loading vLLM takes minutes on the first boot, then gets faster with the cached volumes. It scales to zero after 15 idle minutes. **Warm it up before filming.**
 - **Flags** are taken from the HF model card (2026-11-01): `--trust-remote-code --enable-auto-tool-choice --tool-call-parser qwen3_coder --reasoning-parser nano_v3`, vLLM ≥ 0.12.
 - **Thinking off:** set per request (`chat_template_kwargs.enable_thinking=false`). The card recommends temperature 0.6 for chat; we use 0.2 for near-deterministic extraction.
+
+## Free fallback: Kaggle notebook (2× T4, 30 h/week, no card)
+
+Run vLLM or llama.cpp with a quantized Evon in a Kaggle GPU notebook and expose it with `cloudflared tunnel --url http://localhost:8080`. It's fragile: sessions end after about 12 h, the URL changes each time, the T4s are slow, and `nemotron_h` support on them is unproven. Use it only if Modal isn't possible.
 
 ## Option 2: RunPod / any GPU VM
 

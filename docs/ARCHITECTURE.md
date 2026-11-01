@@ -32,7 +32,9 @@
 | 2026-11-01 | Deploy targets: Render (backend), Vercel (frontend), Neon (Postgres) | Free tiers, Docker support, and HTTPS by default. |
 | 2026-11-01 | STT `format=transcribe` stays the default | Live A/B on the same clip: `transcribe` gave `120`/`2 kg` as digits plus Devanagari words (637 ms); `transliterate` gave Latin with numbers as words (592 ms). Digits remove the riskiest failure (misheard number words). Rules handle both. |
 | 2026-11-01 | Custom Devanagari romaniser, not `indic-transliteration` | Colloquial spellings ("udhaar") so one keyword and number table serves both scripts. |
-| 2026-11-01 | Evon served by vLLM on Modal (H100), script prepared but not deployed | The HF card confirms the vLLM flags. `nemotron_h` makes GGUF support uncertain. See `infra/evon/README.md`. |
+| 2026-11-01 | Ledger strictly insert-only: reversal rows carry `reverses_entry_id`; `reversed_by` is derived | The spec's `reversed_by` column would require updating the original. Triggers can forbid every UPDATE only if none is ever needed. |
+| 2026-11-01 | Ledger tests on SQLite and Postgres (CI service) | Triggers, CHECKs and `SUM(bigint)` types differ between engines; prod is Postgres. |
+| 2026-11-01 | Evon served by vLLM on Modal (A100-80GB on the $30/month free credits), script prepared but not deployed | The HF card confirms the vLLM flags. `nemotron_h` makes GGUF support uncertain. See `infra/evon/README.md`. |
 
 ## Evon hosting
 

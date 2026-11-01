@@ -13,7 +13,7 @@ BACKEND_PORT  ?= 8000
 FRONTEND_PORT ?= 3000
 
 .PHONY: help install dev dev-backend dev-frontend test test-backend test-frontend \
-        lint lint-backend lint-frontend fmt migrate smoke-voice tts-say test-live eval-nlu evon-warm docker-up docker-down
+        lint lint-backend lint-frontend fmt migrate seed smoke-voice tts-say test-live eval-nlu evon-warm docker-up docker-down
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN{FS=":.*?## "}{printf "  %-16s %s\n",$$1,$$2}'
@@ -37,7 +37,7 @@ dev-frontend:
 
 test: test-backend test-frontend ## pytest + vitest (fakes only; never hits paid APIs)
 
-test-backend:
+test-backend:  ## set TEST_DATABASE_URL=postgresql://... to also run ledger tests on Postgres
 	cd backend && $(UV) run pytest
 
 test-frontend:
@@ -56,6 +56,9 @@ fmt: ## Auto-format backend
 
 migrate: ## Apply DB migrations
 	cd backend && $(UV) run alembic upgrade head
+
+seed: ## Demo shop + customers (idempotent; run after migrate)
+	cd backend && $(UV) run alembic upgrade head && $(UV) run python -m scripts.seed_demo
 
 smoke-voice: ## Live STT -> TTS round trip (SPENDS CREDITS). make smoke-voice FILE=clip.webm [ARGS="--record"]
 	@test -n "$(FILE)" || { echo "Usage: make smoke-voice FILE=path/to/clip [ARGS=...]"; exit 2; }

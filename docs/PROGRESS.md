@@ -7,8 +7,8 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 | 0. Setup | ✅ done: CI green on GitHub | 2026-11-01 |
 | 1. Gnani voice | ✅ done: live round trip passed, recorded fixtures replay | 2026-11-01 |
 | 2. NLU | ✅ done (rules gate met offline; Evon eval waiting on hosting) | 2026-11-01 |
-| 3. Ledger | ⏳ next | |
-| 4. Voice loop API | — | |
+| 3. Ledger | ✅ done (SQLite + Postgres) | 2026-11-01 |
+| 4. Voice loop API | ⏳ next | |
 | 5. Frontend | — | |
 | 6. Hardening | — | |
 | 7. Deploy | — | |
@@ -86,3 +86,21 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
 **Open issues**
 - Golden cases are self-written. Real shop recordings (QA skill: 20+ clips) are needed before filming.
 - `customer_missing` money entries (no name heard) need a UI path in Phase 4/5.
+
+## Phase 3: Ledger (2026-11-01)
+
+**Done**
+- Models for shop, customer, voice_event, ledger_entry and ledger_line, with the first Alembic migration (upgrade, downgrade and re-upgrade verified on SQLite and Postgres 16).
+- Append-only enforced three ways: service, ORM listeners, and DB triggers (UPDATE, DELETE and TRUNCATE are refused). Reversals are mirror rows; `reversed_by` is derived from them (deviation documented in [LEDGER.md](LEDGER.md)).
+- Service: customers and aliases, record entry with items, signed adjustments, reverse, undo-last; strict integer-paise checks; shop isolation.
+- Queries: balances computed in SQL, dues (top N), IST-day sales summary, history, `format_inr` with Indian digit grouping.
+- REST API: customers, entries, reverse, undo, reports today, dues ([API.md](API.md)). Friendly Hinglish errors.
+- `make seed` (idempotent demo shop with 6 customers). CI now runs the ledger suite on a Postgres service too.
+
+**Metrics**
+- pytest: 434 passed with Postgres enabled (ledger: 32 DB tests × 2 engines + 7). The Hypothesis properties hold (the SQL balance always equals the Python model; a reversal nets to 0; the row count never shrinks).
+
+**Open issues**
+- Auth is not in place yet (Phase 6): routes act on the first shop. Don't deploy before Phase 6.
+- A sale cancelled on a later day reduces that day's total. Revisit when building the end-of-day summary.
+- The credit-guard counter still lives in a JSON file (should move to the DB; low priority).

@@ -9,7 +9,7 @@ import structlog
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import health
+from app.api import health, ledger
 from app.config import get_settings
 from app.core.errors import install_error_handlers
 from app.core.logging import configure_logging
@@ -42,6 +42,7 @@ def create_app() -> FastAPI:
 
     install_error_handlers(app)
     app.include_router(health.router, prefix="/api")
+    app.include_router(ledger.router, prefix="/api")
     return app
 
 

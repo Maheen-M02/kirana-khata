@@ -23,6 +23,20 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:  # ledger tests also run on Postgres (prod parity: triggers, CHECKs, SUM types)
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: kk
+          POSTGRES_PASSWORD: kk
+          POSTGRES_DB: kk
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U kk -d kk" --health-interval 3s --health-timeout 3s
+          --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgresql://kk:kk@localhost:5432/kk
+      PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -36,7 +50,7 @@ jobs:
         run: uv run ruff check . && uv run ruff format --check .
       - name: mypy (strict)
         run: uv run mypy
-      - name: pytest (fakes only, live marker excluded)
+      - name: pytest (fakes only, live marker excluded; ledger on SQLite + Postgres)
         run: uv run pytest
       - name: migrations apply on sqlite
         env:

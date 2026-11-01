@@ -11,7 +11,7 @@ Flags come from the HF model card (checked 2026-11-01): vLLM >= 0.12, --trust-re
 --tool-call-parser qwen3_coder, --reasoning-parser nano_v3. Thinking is turned off per request
 (`chat_template_kwargs.enable_thinking=false`, see app/nlu/evon_client.py). Prompts are short,
 so --max-model-len 16384 saves memory. Model: nemotron_h hybrid MoE, 30B total / ~3.5B active,
-BF16 -> one 80 GB GPU (H100/A100-80GB). Scales to zero after 15 idle minutes: WARM IT UP
+BF16 -> one 80 GB GPU (A100-80GB default; H100 is faster but burns credits ~1.6x). Scales to zero after 15 idle minutes: WARM IT UP
 (`make evon-warm`) before filming. Check Modal's docs if a decorator name has changed.
 """
 
@@ -38,7 +38,7 @@ app = modal.App("kirana-evon")
 
 @app.function(
     image=image,
-    gpu="H100",
+    gpu="A100-80GB",  # $30/mo Modal Starter credits ~= 12 h here (H100 ~= 7.5 h)
     scaledown_window=15 * 60,
     timeout=60 * 60,
     volumes={"/root/.cache/huggingface": hf_cache, "/root/.cache/vllm": vllm_cache},

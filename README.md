@@ -28,11 +28,11 @@ flowchart LR
   A -- haan / ✓ --> I[(Append-only ledger<br/>paise, reversals)]
 ```
 
-More detail is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/VOICE.md](docs/VOICE.md).
+More detail: [ARCHITECTURE](docs/ARCHITECTURE.md) · [VOICE](docs/VOICE.md) · [NLU](docs/NLU.md) · [LEDGER](docs/LEDGER.md) · [API](docs/API.md).
 
 ## Design decisions (summary)
 
-- **Money is an integer number of paise.** The ledger is append-only, and corrections are reversal entries.
+- **Money is an integer number of paise.** The ledger is append-only, enforced by database triggers, and corrections are reversal entries. Balances are computed in SQL and property-tested against an independent model on SQLite and Postgres.
 - **Nothing is written without confirmation.** The LLM's amount is only a suggestion; the rules parser checks it independently.
 - **One Gnani request at a time.** The account allows 1 active request, so STT and TTS share a process-wide lock ([docs/DOC_DIFFS.md](docs/DOC_DIFFS.md)).
 - **Tests never call paid APIs.** Fakes stand in for Gnani and Evon, and live calls only run under `pytest -m live` or `make smoke-voice`.
@@ -56,6 +56,7 @@ Prerequisites: Python 3.12 via [uv](https://docs.astral.sh/uv/), Node 20+ with p
 ```bash
 cp .env.example .env        # add GNANI_API_KEY; keep NLU_MODE=rules until Evon is hosted
 make install
+make seed                   # demo shop + customers
 make dev                    # backend http://localhost:8000, frontend http://localhost:3000
 make lint test              # ruff, mypy --strict, eslint, tsc, pytest, vitest
 make docker-up              # backend + Postgres in Docker (prod parity)
