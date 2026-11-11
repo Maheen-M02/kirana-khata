@@ -87,6 +87,7 @@ class VoiceTurnService:
     parser: IntentParser
     audio_dir: Path
     tts_voice_key: str = "default"  # model+voice+language, so cached audio follows voice changes
+    _t_confirm: float | None = field(default=None, init=False, repr=False)
 
     # ------------------------------------------------------------------ helpers
     def _customers(self, shop_id: int) -> list[CustomerRef]:
@@ -131,6 +132,10 @@ class VoiceTurnService:
         event.latency_tts_ms = (event.latency_tts_ms or 0) + tts_ms
         if t_start is not None:
             event.latency_total_ms = round((time.perf_counter() - t_start) * 1000)
+        elif self._t_confirm is not None:  # a confirm step: add its time to the turn's total
+            spent = round((time.perf_counter() - self._t_confirm) * 1000)
+            event.latency_total_ms = (event.latency_total_ms or 0) + spent
+            self._t_confirm = None
         event.status = status
         event.pending_json = pending
         result = TurnResult(
@@ -275,13 +280,18 @@ class VoiceTurnService:
                 event,
                 status=VoiceStatus.confirmed,
                 stage="done",
-                text=tpl.sales_today_text(s.total_paise, s.entries),
+                text=tpl.sales_today_text(
+                    s.total_paise, s.entries, s.credit_paise, s.payments_paise
+                ),
                 parsed=parsed,
                 t_start=t0,
             )
         if intent == "query_dues_list":
-            owing = queries.dues(self.db, shop_id, limit=3)
-            text = tpl.dues_list_text([(b.display_name, b.balance_paise) for b in owing])
+            owing = queries.dues(self.db, shop_id, limit=10_000)
+            text = tpl.dues_list_text(
+                [(b.display_name, b.balance_paise) for b in owing],
+                total_paise=sum(b.balance_paise for b in owing),
+            )
             return await self._finish(
                 event,
                 status=VoiceStatus.confirmed,
@@ -291,12 +301,31 @@ class VoiceTurnService:
                 t_start=t0,
             )
         if intent == "undo_last":
-            pending: dict[str, Any] = {"stage": "confirm", "intent": "undo_last"}
+            target = svc.last_reversible_entry(self.db, shop_id)
+            if target is None:
+                event.error = "ledger:nothing_to_undo"
+                return await self._finish(
+                    event,
+                    status=VoiceStatus.failed,
+                    stage="error",
+                    text=tpl.NOTHING_TO_UNDO,
+                    parsed=parsed,
+                    t_start=t0,
+                )
+            who = self.db.get(Customer, target.customer_id) if target.customer_id else None
+            # Pin the entry that was read back: a "haan" cancels exactly that one.
+            pending: dict[str, Any] = {
+                "stage": "confirm",
+                "intent": "undo_last",
+                "entry_id": target.id,
+            }
             return await self._finish(
                 event,
                 status=VoiceStatus.pending,
                 stage="confirm",
-                text=tpl.UNDO_CONFIRM,
+                text=tpl.undo_confirm_text(
+                    target.type.value, who.display_name if who else None, target.amount_paise
+                ),
                 parsed=parsed,
                 pending=pending,
                 t_start=t0,
@@ -363,7 +392,10 @@ class VoiceTurnService:
             "candidates": [],
             "flags": parsed.flags,
             "items": [i.model_dump(mode="json") for i in parsed.items],
+            "amount_options": parsed.amount_options,
         }
+        if parsed.amount_options:
+            pending["amount_paise"] = None  # two amounts heard: ask which, never pick one
         needs_customer = parsed.intent != "cash_sale"
         if needs_customer and parsed.customer:
             res = resolve(parsed.customer, customers)
@@ -378,8 +410,25 @@ class VoiceTurnService:
         elif needs_customer:
             pending["stage"] = "customer"
             return pending
-        pending["stage"] = "amount" if parsed.amount_paise is None else self._confirm_stage(pending)
+        self._fill_settlement(pending)
+        pending["stage"] = (
+            "amount" if pending["amount_paise"] is None else self._confirm_stage(pending)
+        )
         return pending
+
+    def _fill_settlement(self, pending: dict[str, Any]) -> None:
+        """'Gupta ji ne poora hisaab chukta kiya': the amount is whatever Gupta ji owes.
+        It is still read back and needs a haan like any other entry."""
+        if (
+            pending.get("amount_paise") is None
+            and "full_settlement" in pending.get("flags", [])
+            and pending.get("customer_id")
+        ):
+            c = self.db.get(Customer, pending["customer_id"])
+            if c is not None:
+                owed = queries.customer_balance(self.db, c.shop_id, c.id)
+                if owed > 0:
+                    pending["amount_paise"] = owed
 
     @staticmethod
     def _confirm_stage(pending: dict[str, Any]) -> str:
@@ -410,6 +459,15 @@ class VoiceTurnService:
             options = [{"customer_id": c.id, "name": c.display_name} for c in refs]
         elif stage == "customer":
             text = ASK_CUSTOMER
+        elif stage == "amount" and pending.get("amount_options"):
+            heard: list[int] = pending["amount_options"]
+            text = tpl.amount_choice_text(heard)
+            options = [{"amount_paise": p, "label": queries.format_inr(p)} for p in heard]
+            if len(heard) <= 3:  # "1 kilo aata 45, 2 biscuit 20": the bill is the sum
+                both = sum(heard)
+                options.append(
+                    {"amount_paise": both, "label": f"Jod kar {queries.format_inr(both)}"}
+                )
         elif stage == "amount":
             name = self._name_for(pending)
             who = f"{name} ka" if name else ""
@@ -484,6 +542,7 @@ class VoiceTurnService:
         audio: bytes | None = None,
         transcript: str | None = None,
     ) -> TurnResult:
+        self._t_confirm = time.perf_counter()
         event = self.db.get(VoiceEvent, event_id)
         if event is None or event.shop_id != shop_id:
             raise svc.LedgerError("event_not_found", "Yeh baat nahi mili. Dobara boliye.", 404)
@@ -517,6 +576,7 @@ class VoiceTurnService:
                     return await self._reject(event)
                 return await self._respond_pending(event, pending, None, customers, None)
             pending.update(chosen)
+            self._fill_settlement(pending)
             if pending["intent"] == "query_balance":
                 bal = queries.customer_balance(self.db, shop_id, pending["customer_id"])
                 name = self._name_for(pending) or ""
@@ -540,6 +600,7 @@ class VoiceTurnService:
                     return await self._reject(event)
                 return await self._respond_pending(event, pending, None, customers, None)
             pending["amount_paise"] = amt
+            pending["amount_options"] = []
             pending["stage"] = self._confirm_stage(pending)
             return await self._respond_pending(event, pending, None, customers, None)
 
@@ -605,7 +666,17 @@ class VoiceTurnService:
         intent = pending["intent"]
         try:
             if intent == "undo_last":
-                reversal = svc.undo_last(self.db, shop_id=shop_id, voice_event_id=event.id)
+                reversal = (
+                    svc.reverse_entry(
+                        self.db,
+                        shop_id=shop_id,
+                        entry_id=pending["entry_id"],
+                        note="undo",
+                        voice_event_id=event.id,
+                    )
+                    if pending.get("entry_id")
+                    else svc.undo_last(self.db, shop_id=shop_id, voice_event_id=event.id)
+                )
                 return await self._finish(
                     event,
                     status=VoiceStatus.confirmed,

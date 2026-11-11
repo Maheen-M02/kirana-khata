@@ -124,7 +124,9 @@ def undo_last(db: DbSession, shop_id: ShopId) -> UndoOut:
 @router.get("/reports/today", response_model=SalesOut)
 def sales_today(db: DbSession, shop_id: ShopId) -> SalesOut:
     s = queries.sales_summary(db, shop_id, tz=get_settings().tz)
-    return SalesOut.of(s, sales_today_text(s.total_paise, s.entries))
+    return SalesOut.of(
+        s, sales_today_text(s.total_paise, s.entries, s.credit_paise, s.payments_paise)
+    )
 
 
 @router.get("/reports/dues", response_model=DuesOut)

@@ -79,6 +79,8 @@ class ParsedIntent(BaseModel):
     items: list[Item] = Field(default_factory=list)
     amount_paise: int | None = Field(default=None, ge=0, le=MAX_AMOUNT_PAISE)
     amount_text: str | None = None
+    # More than one amount was heard and either could be the bill: ask, never pick silently.
+    amount_options: list[int] = Field(default_factory=list)
     confidence: float = Field(ge=0.0, le=1.0)
     source: NluSource
     flags: list[str] = Field(default_factory=list)

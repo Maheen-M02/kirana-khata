@@ -110,6 +110,20 @@ PURCHASE = _keys(
     "li", "liya", "liye", "lia", "lie", "kharida", "kharide", "kharidi", "ghetla", "ghetle",
     "ghetli", "nela", "nele", "le", "gaye", "gaya",
 )  # fmt: skip
+# An explicit "cancel/hatao" always means undo, even when the entry is described with an amount
+# ("Sharma ji ka 120 udhaar cancel karo"). "galti/galat" alone can also start a correction.
+EXPLICIT_UNDO = _keys(
+    "cancel", "kainsil", "kensil", "undo", "hata", "hatao", "mita", "mitao", "radd"
+)
+ENTRY_WORDS = _keys("entry", "pichhli", "pichli", "pichhla", "pichla", "aakhri", "akhri", "last")
+HOW_MUCH = _keys("kitna", "kitni", "kitne", "kiti", "kitta")
+GAVE_TO = _keys("ko", "la")  # "Meena ko 200 diye": the shop gave, so it is udhaar, not jama
+SETTLE_ALL = _keys("chukta", "poora", "pura", "saara", "sara", "poore", "pure", "saare", "sare")
+ITEM_VERBS = _keys(
+    "mile", "mila", "mili", "de", "dena", "dene", "dedo", "do", "but", "lekin", "magar", "par",
+    "lie", "lia", "kaha", "bola", "wala", "wale", "hai", "hain", "ho", "kar", "karo", "likho",
+    "likh", "mein", "me", "bhi", "sirf",
+)  # fmt: skip
 TWO_AMOUNT_GOODS = _keys("saaman", "saman", "samaan", "maal", "mal", "bill", "saamaan", "kharida")
 
 
@@ -182,8 +196,10 @@ def extract_customer(tokens: Sequence[Token], known: Sequence[str] = ()) -> str 
 
 
 # ------------------------------------------------------------ items
-def extract_items(tokens: Sequence[Token], spans: Sequence[NumberSpan]) -> list[Item]:
-    items: list[Item] = []
+def _items_with_spans(
+    tokens: Sequence[Token], spans: Sequence[NumberSpan]
+) -> list[tuple[Item, NumberSpan]]:
+    items: list[tuple[Item, NumberSpan]] = []
     for s in spans:
         if s.kind not in ("qty", "unknown") or s.value > 1000:
             continue
@@ -195,14 +211,48 @@ def extract_items(tokens: Sequence[Token], spans: Sequence[NumberSpan]) -> list[
         name: list[str] = []
         while i < len(tokens) and len(name) < 3:
             t = tokens[i]
-            if t.key in ITEM_STOP or t.text[0].isdigit() or t.key in UNIT_WORDS:
+            if (
+                t.key in ITEM_STOP or t.key in ITEM_VERBS or t.text[0].isdigit()
+                or t.key in UNIT_WORDS
+            ):  # fmt: skip
                 break
             name.append(t.text)
             i += 1
         if name and (unit or s.kind == "unknown"):
             qty = Decimal(s.value.numerator) / Decimal(s.value.denominator)
-            items.append(Item(name=" ".join(name), qty=qty, unit=unit))
+            items.append((Item(name=" ".join(name), qty=qty, unit=unit), s))
     return items
+
+
+def extract_items(tokens: Sequence[Token], spans: Sequence[NumberSpan]) -> list[Item]:
+    return [item for item, _ in _items_with_spans(tokens, spans)]
+
+
+def _span_paise(s: NumberSpan) -> int:
+    return to_paise(s.value / 100 if s.is_paise else s.value)
+
+
+def _amount_options(amount: AmountResult, item_spans: Sequence[NumberSpan]) -> list[int]:
+    """The distinct amounts heard when more than one could be the bill ("10 ya 100?").
+    Numbers already explained as an item quantity ("12 ande") are not candidates."""
+    money = [s for s in amount.spans if s.kind == "money"]
+    pool = (
+        money
+        if len(money) > 1
+        else [
+            s
+            for s in amount.spans
+            if s.kind in ("money", "unknown")
+            and not any(s is used for used in item_spans)
+            and not (s.kind == "unknown" and s.value == 1 and s.end - s.start == 1)
+        ]
+    )
+    out: list[int] = []
+    for s in pool:
+        p = _span_paise(s)
+        if 0 < p <= MAX_AMOUNT_PAISE and p not in out:
+            out.append(p)
+    return out if len(out) > 1 else []
 
 
 # ------------------------------------------------------------ main entry
@@ -239,7 +289,8 @@ def parse_rules(transcript: str, ctx: NluContext | None = None) -> ParsedIntent:
     has_number = bool(amount.spans)
 
     # 1. Short yes / no (the confirm step).
-    if len(tokens) <= 4 and not has_number:
+    about_entry = _any(keys, ENTRY_WORDS)
+    if len(tokens) <= 4 and not has_number and not about_entry:
         if keys[0] in NO or any(k in NO for k in keys):
             return ParsedIntent(intent="confirm_no", confidence=0.9, **base)
         soft = FILLERS | _keys(
@@ -250,24 +301,13 @@ def parse_rules(transcript: str, ctx: NluContext | None = None) -> ParsedIntent:
             return ParsedIntent(intent="confirm_yes", confidence=0.9, **base)
 
     # 2. Undo.
-    if (_any(keys, UNDO) or _has_phrase(keys, UNDO_PHRASES)) and not (
-        amount.paise and (_any(keys, CREDIT) or _any(keys, PAYMENT))
+    if _any(keys, EXPLICIT_UNDO) or (
+        (_any(keys, UNDO) or _has_phrase(keys, UNDO_PHRASES) or (about_entry and _any(keys, NO)))
+        and not (amount.paise and (_any(keys, CREDIT) or _any(keys, PAYMENT)))
     ):
         return ParsedIntent(intent="undo_last", confidence=0.85, **base)
 
     customer = extract_customer(tokens, ctx.known_customers)
-    is_question = _any(keys, QUERY_WORDS) and not amount.paise
-
-    # 3. Queries (read-only).
-    if _has_phrase(keys, DUES_PHRASES):
-        return ParsedIntent(intent="query_dues_list", confidence=0.85, **base)
-    if _any(keys, SALES_WORDS) and (_any(keys, TODAY) or is_question) and not customer:
-        return ParsedIntent(intent="query_sales_today", confidence=0.85, **base)
-    if customer and is_question and _any(keys, BALANCE_WORDS):
-        return ParsedIntent(intent="query_balance", customer=customer, confidence=0.85, **base)
-
-    # 4. Money.
-    flags = list(amount.flags)
     credit = (_any(keys, CREDIT) or _has_phrase(keys, CREDIT_PHRASES)) and not _negated(
         keys, CREDIT
     )
@@ -278,6 +318,28 @@ def parse_rules(transcript: str, ctx: NluContext | None = None) -> ParsedIntent:
         any(k in PAYMENT and k not in WEAK_PAYMENT for k in keys)
         or _has_phrase(keys, PAYMENT_PHRASES)
     )
+    how_much = _any(keys, HOW_MUCH)
+    # "Gupta ji ne poora hisaab chukta kar diya" is a payment, not a question about the hisaab.
+    is_question = _any(keys, QUERY_WORDS) and not amount.paise and (how_much or not strong_payment)
+
+    # 3. Queries (read-only).
+    if _has_phrase(keys, DUES_PHRASES):
+        return ParsedIntent(intent="query_dues_list", confidence=0.85, **base)
+    if how_much and not amount.paise and not customer:
+        # "kul kitna baaki hai", "total udhaar kitna hai" -> dues; "aaj kitna udhaar diya",
+        # "aaj kitna paisa aaya" -> the day's summary. Never start a money entry from a question.
+        owed = _any(keys, CREDIT) or _any(keys, BALANCE_WORDS - HOW_MUCH)
+        if owed and not _any(keys, TODAY):
+            return ParsedIntent(intent="query_dues_list", confidence=0.8, **base)
+        if _any(keys, TODAY) or _any(keys, SALES_WORDS) or payment or credit:
+            return ParsedIntent(intent="query_sales_today", confidence=0.8, **base)
+    if _any(keys, SALES_WORDS) and (_any(keys, TODAY) or is_question) and not customer:
+        return ParsedIntent(intent="query_sales_today", confidence=0.85, **base)
+    if customer and is_question and _any(keys, BALANCE_WORDS):
+        return ParsedIntent(intent="query_balance", customer=customer, confidence=0.85, **base)
+
+    # 4. Money.
+    flags = list(amount.flags)
     cash = _any(keys, CASH) and not _negated(keys, CASH)
     paise = amount.paise
     intent: Intent
@@ -289,8 +351,15 @@ def parse_rules(transcript: str, ctx: NluContext | None = None) -> ParsedIntent:
         flags = [f for f in flags if f != "multiple_amounts"] + ["two_amounts"]
     elif cash:
         intent = "cash_sale"
+    elif payment and not credit and not strong_payment and customer and _any(keys, GAVE_TO):
+        # "Meena ko 200 rupaye diye": given *to* the customer. Booking it as jama would move
+        # the balance the wrong way, so read it back as udhaar.
+        intent, confidence = "credit_sale", 0.6
+        flags.append("ambiguous_type")
     elif payment and not credit:
         intent = "payment_received"
+        if paise is None and _any(keys, SETTLE_ALL):
+            flags.append("full_settlement")  # the turn fills in the customer's whole balance
     elif credit and not payment:
         intent = "credit_sale"
     elif credit and payment and not strong_payment:
@@ -321,6 +390,13 @@ def parse_rules(transcript: str, ctx: NluContext | None = None) -> ParsedIntent:
         flags.append("customer_missing")
         confidence = min(confidence, 0.6)
 
+    found = _items_with_spans(tokens, amount.spans)
+    options: list[int] = []
+    if "multiple_amounts" in flags and "corrected" not in flags:
+        options = _amount_options(amount, [s for _, s in found])
+        if not options:
+            flags.remove("multiple_amounts")  # the extra number was a quantity, not a bill
+
     money_span = amount.money_span
     amount_text = (
         " ".join(t.text for t in tokens[money_span.start : money_span.end + 1])
@@ -334,8 +410,9 @@ def parse_rules(transcript: str, ctx: NluContext | None = None) -> ParsedIntent:
     return ParsedIntent(
         intent=intent,
         customer=customer,
-        items=extract_items(tokens, amount.spans),
+        items=[item for item, _ in found],
         amount_paise=paise,
+        amount_options=options,
         amount_text=amount_text,
         confidence=confidence,
         flags=sorted(set(flags)),

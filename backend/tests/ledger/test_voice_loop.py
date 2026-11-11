@@ -281,12 +281,13 @@ def test_queries_answer_without_writing(harness: Callable[..., Harness]) -> None
         "Ramesh Sharma ka total baaki teen sau bees rupaye.",
     )
     assert h.say("kis kis ka baaki hai")["confirm_text"].startswith(
-        "Sabse zyada baaki: Ramesh Sharma"
+        "Kul baaki teen sau bees rupaye. Sabse zyada baaki: Ramesh Sharma"
     )
-    assert (
-        h.say("aaj kitni bikri hui")["confirm_text"]
-        == "Aaj ki bikri teen sau bees rupaye, 1 entry."
-    )
+    summary = "Aaj ki bikri teen sau bees rupaye, 1 entry. Usme udhaar teen sau bees rupaye."
+    assert h.say("aaj kitni bikri hui")["confirm_text"] == summary
+    # Questions never open a money entry ("Kis customer ka hai?").
+    assert h.say("aaj kitna udhaar diya")["confirm_text"] == summary
+    assert h.say("kul kitna baaki hai")["stage"] == "done"
     assert len(h.entries()) == 1
 
 
@@ -298,12 +299,84 @@ def test_undo_by_voice(harness: Callable[..., Harness]) -> None:
     u = h.say("pichhli entry cancel karo")
     assert (u["stage"], u["confirm_text"]) == (
         "confirm",
-        "Pichhli entry cancel karoon? Haan ya nahi?",
+        "Pichhli entry: Ramesh Sharma, ek sau bees rupaye udhaar. Cancel karoon?",
     )
     done = h.confirm(u["event_id"], accept=True)
     assert done["confirm_text"] == "Pichhli entry cancel ho gayi."
     assert h.balance(cid) == 0
     assert len(h.entries()) == 2
+    # Nothing left to cancel: say so instead of asking for a haan.
+    again = h.say("pichhli entry galat hai")
+    assert (again["stage"], again["confirm_text"]) == (
+        "error",
+        "Cancel karne ke liye koi entry nahi hai.",
+    )
+
+
+def test_undo_cancels_the_entry_that_was_read_back(harness: Callable[..., Harness]) -> None:
+    """A new entry booked between the question and the haan must not be the one reversed."""
+    h = harness()
+    cid = h.customer("Ramesh Sharma", "Sharma ji")
+    h.confirm(h.say(SHARMA_UDHAAR)["event_id"], accept=True)
+    u = h.say("Sharma ji ka 120 rupaye udhaar cancel karo")  # described, still an undo
+    assert u["stage"] == "confirm"
+    assert "Cancel karoon?" in u["confirm_text"]
+    with h.db() as s:
+        svc.record_entry(s, shop_id=h.shop.id, type=svc.EntryType.cash_sale, amount_paise=5000)
+        s.commit()
+    h.confirm(u["event_id"], accept=True)
+    assert h.balance(cid) == 0
+    live = [e for e in h.entries() if e.reverses_entry_id is None]
+    assert sorted(e.amount_paise for e in live) == [5000, 12000]
+
+
+def test_two_amounts_heard_asks_which(harness: Callable[..., Harness]) -> None:
+    h = harness()
+    t = h.say("आज मुझे 10 रुपये के 5 टमाटर मिले, but मैंने कहा था कि 100 रुपये के 5 टमाटर देना।")
+    assert t["stage"] == "amount"
+    assert t["confirm_text"] == "Do rakam suni: das rupaye aur ek sau rupaye. Kitne likhoon?"
+    assert [o["amount_paise"] for o in t["options"]] == [1000, 10000, 11000]
+    assert t["options"][2]["label"] == "Jod kar ₹110"
+    c = h.confirm(t["event_id"], amount_paise=10000)
+    assert (c["stage"], c["confirm_text"]) == ("confirm", "ek sau rupaye nakad bikri. Sahi hai?")
+    assert h.entries() == []
+    h.confirm(t["event_id"], accept=True)
+    assert [e.amount_paise for e in h.entries()] == [10000]
+
+
+def test_given_to_customer_is_udhaar_not_jama(harness: Callable[..., Harness]) -> None:
+    h = harness()
+    cid = h.customer("Meena")
+    t = h.say("Meena ko 200 rupaye diye")
+    assert t["confirm_text"] == "Meena, do sau rupaye udhaar. Sahi hai?"
+    h.confirm(t["event_id"], accept=True)
+    assert h.balance(cid) == 20000
+    p = h.say("Meena ne 50 rupaye diye")
+    assert p["confirm_text"] == "Meena ne pachaas rupaye jama kiye. Sahi hai?"
+
+
+def test_full_settlement_reads_back_the_whole_balance(harness: Callable[..., Harness]) -> None:
+    h = harness()
+    cid = h.customer("Anil Gupta", "Gupta ji")
+    with h.db() as s:
+        svc.record_entry(s, shop_id=h.shop.id, type=svc.EntryType.credit_sale, amount_paise=32000,
+                         customer_id=cid)  # fmt: skip
+        s.commit()
+    t = h.say("Gupta ji ne poora hisaab chukta kar diya")
+    assert (t["stage"], t["confirm_text"]) == (
+        "confirm",
+        "Anil Gupta ne teen sau bees rupaye jama kiye. Sahi hai?",
+    )
+    h.confirm(t["event_id"], accept=True)
+    assert h.balance(cid) == 0
+
+
+def test_new_customer_name_keeps_its_spelling(harness: Callable[..., Harness]) -> None:
+    h = harness()
+    t = h.say("Meena ko 75 rupaye udhaar")
+    assert t["confirm_text"].startswith("Naya customer Meena.")
+    t2 = h.say("राजू को 75 रुपये उधार")
+    assert t2["confirm_text"].startswith("Naya customer Raju.")
 
 
 def test_spoken_variant_is_learned_as_alias(harness: Callable[..., Harness]) -> None:

@@ -1,4 +1,4 @@
-import { ArrowLeft, Mic } from "lucide-react";
+import { ArrowLeft, MessageCircle, Mic } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -6,12 +6,16 @@ import { BottomNav } from "@/components/bottom-nav";
 import { EntryList } from "@/components/entry-list";
 import { getJson, type CustomerDetail } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { reminderLink } from "@/lib/voice-machine";
 
 export const dynamic = "force-dynamic";
 
 export default async function CustomerPage({ params }: { params: { id: string } }) {
   if (!/^\d+$/.test(params.id)) notFound();
-  const c = await getJson<CustomerDetail>(`/customers/${params.id}`);
+  const [c, me] = await Promise.all([
+    getJson<CustomerDetail>(`/customers/${params.id}`),
+    getJson<{ name: string }>("/auth/me"),
+  ]);
   if (!c) notFound();
   const owes = c.balance_paise > 0;
   const advance = c.balance_paise < 0;
@@ -50,6 +54,17 @@ export default async function CustomerPage({ params }: { params: { id: string } 
             {c.balance_display.replace("-", "")}
           </p>
         </section>
+
+        {owes && (
+          <a
+            href={reminderLink(c, me?.name)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 flex h-16 items-center justify-center gap-3 rounded-[1.25rem] bg-jama text-xl font-bold text-white shadow-[0_3px_0_hsl(162_72%_17%)] active:translate-y-[3px] active:shadow-none"
+          >
+            <MessageCircle className="h-6 w-6" aria-hidden /> WhatsApp par yaad dilaiye
+          </a>
+        )}
 
         <Link
           href="/"

@@ -236,7 +236,7 @@ export function VoiceConsole() {
 
       {open && turn!.stage === "disambiguate" && (
         <div className="mt-4 flex w-full animate-rise-in flex-col gap-2.5">
-          {turn!.options.map((o) => (
+          {turn!.options.filter((o) => o.customer_id !== undefined).map((o) => (
             <button
               key={o.customer_id}
               type="button"
@@ -253,6 +253,21 @@ export function VoiceConsole() {
           >
             Koi nahi, cancel
           </button>
+        </div>
+      )}
+
+      {open && turn!.stage === "amount" && turn!.options.some((o) => o.amount_paise) && (
+        <div className="mt-4 flex w-full animate-rise-in flex-wrap gap-2.5">
+          {turn!.options.filter((o) => o.amount_paise).map((o) => (
+            <button
+              key={o.label}
+              type="button"
+              onClick={() => tap({ amount_paise: o.amount_paise })}
+              className="num h-16 min-w-[6.5rem] flex-1 rounded-2xl border-2 border-ink/15 bg-white px-4 text-xl font-bold active:border-ink"
+            >
+              {o.label}
+            </button>
+          ))}
         </div>
       )}
 

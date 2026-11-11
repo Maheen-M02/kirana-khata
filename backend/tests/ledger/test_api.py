@@ -52,7 +52,9 @@ def test_reports(api: TestClient) -> None:
     api.post("/api/ledger/entries", json={"type": "cash_sale", "amount_paise": 5000})
     today = api.get("/api/reports/today").json()
     assert (today["total_paise"], today["entries"], today["total_display"]) == (47000, 3, "₹470")
-    assert today["speak"] == "Aaj ki bikri chaar sau sattar rupaye, 3 entry."
+    assert today["speak"] == (
+        "Aaj ki bikri chaar sau sattar rupaye, 3 entry. Usme udhaar chaar sau bees rupaye."
+    )
     dues = api.get("/api/reports/dues").json()
     assert [c["display_name"] for c in dues["customers"]] == ["Gupta ji", "Verma ji"]
     assert dues["speak"].startswith("Sabse zyada baaki: Gupta ji teen sau rupaye")

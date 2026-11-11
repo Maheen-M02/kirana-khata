@@ -18,7 +18,8 @@ export interface Turn {
   confirm_text: string;
   confirm_audio_url: string | null;
   needs_confirmation: boolean;
-  options: { customer_id: number; name: string }[];
+  // "Kaun se Sharma ji?" -> customers to pick from; "Do rakam suni" -> amounts to pick from.
+  options: { customer_id?: number; name?: string; amount_paise?: number; label?: string }[];
   entry_id: number | null;
   balance_paise: number | null;
 }
@@ -125,6 +126,19 @@ export function rupeesToPaise(input: string): number | null {
   if (!m) return null;
   const paise = Number(m[1]) * 100 + Number((m[2] ?? "").padEnd(2, "0"));
   return paise > 0 ? paise : null;
+}
+
+/** wa.me link with a polite payment reminder (no WhatsApp API: the shopkeeper presses send).
+ *  With no saved number WhatsApp opens its contact picker instead. */
+export function reminderLink(
+  customer: { display_name: string; phone: string | null; balance_paise: number },
+  shopName: string | null | undefined,
+): string {
+  const digits = (customer.phone ?? "").replace(/\D/g, "");
+  const to = digits.length === 10 ? `91${digits}` : digits.length >= 11 ? digits : "";
+  const from = shopName ? `${shopName} se. ` : "";
+  const text = `Namaste ${customer.display_name}, ${from}Aapka ${formatInr(customer.balance_paise)} baaki hai. Jab ho sake jama kar dijiye. Dhanyavaad.`;
+  return `https://wa.me/${to}?text=${encodeURIComponent(text)}`;
 }
 
 /** 12000000 -> "₹1,20,000"; 1250 -> "₹12.50" (Indian grouping, integer maths). */

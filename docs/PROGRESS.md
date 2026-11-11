@@ -202,3 +202,30 @@ Deadline **10 Nov 2026**. The day plan (MASTER_PROMPT §7): Phases 0–1 by 2 No
   - Self-serve sign-up doesn't exist, so the CTA opens the app's login.
   - Pricing isn't stated.
   - Contact or WhatsApp details for onboarding are missing.
+
+## Bug hunt on the parser and voice loop (2026-11-11)
+
+Sixty realistic utterances were run through the rules parser and the fixed flows were then driven in the running app (key blanked, no credits).
+
+**Fixed**
+
+| Said | Before | Now |
+|---|---|---|
+| "Meena ko 200 rupaye diye" | Booked as jama (balance moved the wrong way) | Read back as udhaar; "Meena ne … diye" is still jama |
+| "Sharma ji ka 120 rupaye udhaar cancel karo" | Offered a *new* ₹120 udhaar | Undo |
+| "पिछली एंट्री गलत है" | Treated as a bare "nahi" | Undo |
+| "pichhli entry cancel karo" | "Pichhli entry cancel karoon?" with no detail | Names the entry ("Ramesh Sharma, ek sau bees rupaye udhaar. Cancel karoon?") and cancels exactly that entry; says so when there is nothing to cancel |
+| "Gupta ji ne poora hisaab chukta kar diya" | Answered as a balance question | Payment of the whole balance, read back for a haan |
+| "aaj kitna udhaar diya", "kul kitna baaki hai", "total udhaar kitna hai" | "Kis customer ka hai?" or the wrong report | Day summary or total dues |
+| Two amounts in one sentence | Silently picked the last one | Asks "Do rakam suni: … Kitne likhoon?" with tap choices, including the sum |
+| "Ramesh ne 12 ande liye 84 rupaye" | Flagged as two amounts | The 12 is a quantity; no flag |
+| New customer "Meena", "राजू" | Saved as "Mena", "Rajo" | "Meena", "Raju" |
+| Item names | "tamaatar mile but", "200 de" | "tamaatar"; verbs and paid amounts are not items |
+| `latency_total_ms` on confirm steps | Stale | Each confirm step adds its own time |
+
+**Added (both in MASTER_PROMPT)**
+
+- The spoken day summary now includes udhaar given and jama received.
+- A "WhatsApp par yaad dilaiye" button on a customer who owes money (`wa.me` link, prefilled text, no WhatsApp API).
+
+**Still open:** sign-up, saving a customer's phone number from the app, the offline queue, "kal ki bikri" (other days), Sentry.

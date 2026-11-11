@@ -149,6 +149,20 @@ def resolve(spoken: str | None, customers: Sequence[CustomerRef]) -> Resolution:
     return Resolution("ambiguous", spoken, candidates=strong[:3])
 
 
+_LONG_RUN = re.compile(r"(.)\1{2,}")
+
+
+def _tidy_name(word: str) -> str:
+    """Romanised spelling -> how people write the name: 'sharmaa' -> 'sharma', 'raajoo' ->
+    'raju', 'meenaa' -> 'meena'. Real doubles stay ('meena', 'pappu', 'munna')."""
+    w = _LONG_RUN.sub(r"\1\1", word).replace("aa", "a")
+    if len(w) > 3 and w.endswith("oo"):
+        w = w[:-2] + "u"
+    if len(w) > 3 and w.endswith("ee"):
+        w = w[:-2] + "i"
+    return w
+
+
 def display_spoken(spoken: str) -> str:
     """'sharmaa jee' -> 'Sharma ji' for prompts."""
     words = romanise(spoken).split()
@@ -158,7 +172,7 @@ def display_spoken(spoken: str) -> str:
         if lw in ("jee", "ji"):
             out.append("ji")
         else:
-            out.append(_REPEATS.sub(r"\1", lw).capitalize())
+            out.append(_tidy_name(lw).capitalize())
     return " ".join(out)
 
 

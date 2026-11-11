@@ -6,6 +6,7 @@ import {
   initialState,
   nextTarget,
   reducer,
+  reminderLink,
   rupeesToPaise,
   type Event,
   type State,
@@ -116,5 +117,19 @@ describe("money helpers (integer paise only)", () => {
     [99999999, "₹9,99,999.99"],
   ])("formatInr(%d) = %s", (paise, text) => {
     expect(formatInr(paise)).toBe(text);
+  });
+});
+
+describe("reminderLink", () => {
+  const c = { display_name: "Anil Gupta", phone: "98765 43210", balance_paise: 32000 };
+  it("addresses a saved 10-digit number with the India code", () => {
+    const url = reminderLink(c, "Ramesh Kirana Store");
+    expect(url.startsWith("https://wa.me/919876543210?text=")).toBe(true);
+    expect(decodeURIComponent(url.split("text=")[1])).toBe(
+      "Namaste Anil Gupta, Ramesh Kirana Store se. Aapka ₹320 baaki hai. Jab ho sake jama kar dijiye. Dhanyavaad.",
+    );
+  });
+  it("opens the contact picker when no number is saved", () => {
+    expect(reminderLink({ ...c, phone: null }, null).startsWith("https://wa.me/?text=")).toBe(true);
   });
 });
